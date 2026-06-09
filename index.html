@@ -125,6 +125,10 @@ header .subtitle{font-size:12px;color:var(--text3)}
 .zoom-btn:hover{background:var(--bg4)}
 .zoom-label{font-size:10px;color:var(--text3);text-align:center;padding:2px}
 .drop-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50}
+.node-el.conn-error{animation:connErrorFlash 0.3s ease}
+@keyframes connErrorFlash{0%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}100%{transform:translateX(0)}}
+.conn-error-toast{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:#7f1d1d;border:1px solid #ef4444;color:#fca5a5;font-size:11px;padding:5px 10px;border-radius:5px;white-space:nowrap;pointer-events:none;z-index:200;font-family:'Segoe UI',system-ui,sans-serif;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.conn-error-toast::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#ef4444}
 </style>
 </head>
 <body>
@@ -414,8 +418,8 @@ var RECIPES = {
   b_conveyor_mk1:   {label:'Conveyor Belt Mk.I',inputs:[{item:'iron_ingot',qty:2},{item:'gear',qty:1}],outputs:[{item:'b_conveyor_mk1',qty:3}],time:1,machine:'assembler'},
   b_conveyor_mk2:   {label:'Conveyor Belt Mk.II',inputs:[{item:'b_conveyor_mk1',qty:3},{item:'em_turbine',qty:1}],outputs:[{item:'b_conveyor_mk2',qty:3}],time:1,machine:'assembler'},
   b_conveyor_mk3:   {label:'Conveyor Belt Mk.III',inputs:[{item:'b_conveyor_mk2',qty:3},{item:'super_mag_ring',qty:1},{item:'graphene',qty:1}],outputs:[{item:'b_conveyor_mk3',qty:3}],time:1,machine:'assembler'},
-  b_sorter_mk1:     {label:'Sorter Mk.I',inputs:[{item:'iron_ingot',qty:1},{item:'gear',qty:1}],outputs:[{item:'b_sorter_mk1',qty:1}],time:1,machine:'assembler'},
-  b_sorter_mk2:     {label:'Sorter Mk.II',inputs:[{item:'b_sorter_mk1',qty:2},{item:'motor',qty:1}],outputs:[{item:'b_sorter_mk2',qty:2}],time:1,machine:'assembler'},
+  b_sorter_mk1:     {label:'Sorter Mk.I',inputs:[{item:'gear',qty:1},{item:'circuit_board',qty:1}],outputs:[{item:'b_sorter_mk1',qty:1}],time:1,machine:'assembler'},
+  b_sorter_mk2:     {label:'Sorter Mk.II',inputs:[{item:'b_sorter_mk1',qty:2},{item:'electric_motor',qty:1}],outputs:[{item:'b_sorter_mk2',qty:2}],time:1,machine:'assembler'},
   b_sorter_mk3:     {label:'Sorter Mk.III',inputs:[{item:'b_sorter_mk2',qty:2},{item:'em_turbine',qty:1}],outputs:[{item:'b_sorter_mk3',qty:2}],time:1,machine:'assembler'},
   b_splitter:       {label:'Splitter',inputs:[{item:'iron_ingot',qty:3},{item:'gear',qty:2},{item:'circuit_board',qty:1}],outputs:[{item:'b_splitter',qty:1}],time:2,machine:'assembler'},
   b_storage_mk1:    {label:'Storage Mk.I',inputs:[{item:'iron_ingot',qty:4},{item:'stone_brick',qty:4}],outputs:[{item:'b_storage_mk1',qty:1}],time:2,machine:'assembler'},
@@ -426,7 +430,7 @@ var RECIPES = {
   b_spray_coater:   {label:'Spray Coater',inputs:[{item:'steel',qty:4},{item:'plastic',qty:2},{item:'circuit_board',qty:2}],outputs:[{item:'b_spray_coater',qty:1}],time:3,machine:'assembler'},
   // Production buildings
   b_mining_machine: {label:'Mining Machine',inputs:[{item:'iron_ingot',qty:4},{item:'circuit_board',qty:2},{item:'magnetic_coil',qty:2},{item:'gear',qty:4}],outputs:[{item:'b_mining_machine',qty:1}],time:3,machine:'assembler'},
-  b_water_pump:     {label:'Water Pump',inputs:[{item:'iron_ingot',qty:8},{item:'stone_brick',qty:4},{item:'motor',qty:4},{item:'circuit_board',qty:2}],outputs:[{item:'b_water_pump',qty:1}],time:4,machine:'assembler'},
+  b_water_pump:     {label:'Water Pump',inputs:[{item:'iron_ingot',qty:8},{item:'stone_brick',qty:4},{item:'electric_motor',qty:4},{item:'circuit_board',qty:2}],outputs:[{item:'b_water_pump',qty:1}],time:4,machine:'assembler'},
   b_oil_extractor:  {label:'Oil Extractor',inputs:[{item:'steel',qty:12},{item:'stone_brick',qty:12},{item:'circuit_board',qty:6},{item:'plasma_exciter',qty:6}],outputs:[{item:'b_oil_extractor',qty:1}],time:8,machine:'assembler'},
   b_arc_smelter:    {label:'Arc Smelter',inputs:[{item:'iron_ingot',qty:4},{item:'stone_brick',qty:2},{item:'circuit_board',qty:4},{item:'magnetic_coil',qty:4}],outputs:[{item:'b_arc_smelter',qty:1}],time:3,machine:'assembler'},
   b_plane_smelter:  {label:'Plane Smelter',inputs:[{item:'b_arc_smelter',qty:1},{item:'titanium_alloy',qty:5},{item:'circuit_board',qty:5},{item:'plasma_exciter',qty:4}],outputs:[{item:'b_plane_smelter',qty:1}],time:5,machine:'assembler'},
@@ -438,7 +442,6 @@ var RECIPES = {
   b_fractionator:   {label:'Fractionator',inputs:[{item:'steel',qty:8},{item:'stone_brick',qty:4},{item:'gear',qty:4},{item:'graphene',qty:4}],outputs:[{item:'b_fractionator',qty:1}],time:3,machine:'assembler'},
   b_particle_collider:{label:'Miniature Particle Collider',inputs:[{item:'frame_material',qty:4},{item:'titanium_alloy',qty:8},{item:'graphene',qty:8},{item:'processor',qty:4},{item:'super_mag_ring',qty:4}],outputs:[{item:'b_particle_collider',qty:1}],time:10,machine:'assembler'},
   b_matrix_lab:     {label:'Matrix Lab',inputs:[{item:'iron_ingot',qty:8},{item:'glass',qty:4},{item:'circuit_board',qty:4},{item:'magnetic_coil',qty:4}],outputs:[{item:'b_matrix_lab',qty:1}],time:3,machine:'assembler'},
-  b_spray_coater2:  {label:'Spray Coater (alt)',inputs:[{item:'steel',qty:4},{item:'plastic',qty:2},{item:'circuit_board',qty:2}],outputs:[{item:'b_spray_coater',qty:1}],time:3,machine:'assembler'},
   // Power buildings
   b_wind_turbine:   {label:'Wind Turbine',inputs:[{item:'iron_ingot',qty:6},{item:'gear',qty:1},{item:'magnetic_coil',qty:3}],outputs:[{item:'b_wind_turbine',qty:1}],time:2,machine:'assembler'},
   b_solar_panel:    {label:'Solar Panel',inputs:[{item:'copper_ingot',qty:10},{item:'high_purity_silicon',qty:10},{item:'circuit_board',qty:5}],outputs:[{item:'b_solar_panel',qty:1}],time:5,machine:'assembler'},
@@ -569,12 +572,40 @@ var NODE_DEFS = {
   belt:{
     label:'Belt',icon:'➡️',color:'#1e40af',
     defaults:{tier:'mk1'},
-    ports:{inputs:[{id:'in',label:'In',item:'any'}],outputs:[{id:'out',label:'Out',item:'any'}]},
-    calc:function(n,inflow){
+    ports:{inputs:[],outputs:[{id:'out',label:'Out',item:'any'}]},
+    calc:function(n,inflow,inflowMap){
       var cap=BELT_CAPS[n.props.tier]||360;
-      var actual=Math.min(inflow||0,cap);
-      var pct=cap>0?actual/cap:0;
-      n.computed={input_per_min:inflow||0,output_per_min:actual,capacity:cap,load_pct:Math.round(pct*100),item:n.upstream_item||'unknown'};
+      // Total inflow is the sum of all connected upstream outputs (already in scalar inflow)
+      var totalIn = inflow || 0;
+      var actual = Math.min(totalIn, cap);
+      var pct = cap > 0 ? actual / cap : 0;
+      // Determine what item this belt carries:
+      // If all inputs are the same item, use that. If mixed, use the dominant one.
+      var dominantItem = n.upstream_item || 'unknown';
+      if (inflowMap) {
+        var ikeys = Object.keys(inflowMap);
+        if (ikeys.length === 1) {
+          dominantItem = ikeys[0];
+        } else if (ikeys.length > 1) {
+          // Pick the item with the highest flow rate
+          var maxRate = -1;
+          for (var ik = 0; ik < ikeys.length; ik++) {
+            if (inflowMap[ikeys[ik]] > maxRate) {
+              maxRate = inflowMap[ikeys[ik]];
+              dominantItem = ikeys[ik];
+            }
+          }
+        }
+      }
+      n.computed={
+        input_per_min:totalIn,
+        output_per_min:actual,
+        capacity:cap,
+        load_pct:Math.round(pct*100),
+        item:dominantItem,
+        item_out:dominantItem,
+        source_count:inflowMap ? Object.keys(inflowMap).length : 0
+      };
       return n.computed;
     }
   },
@@ -898,12 +929,195 @@ var App = {
     this.renderSidebar();
   },
 
+  showConnectionError: function(nodeId, message) {
+    var el = document.getElementById('node_' + nodeId);
+    if (!el) {
+      return;
+    }
+    // Shake animation
+    el.classList.add('conn-error');
+    setTimeout(function() {
+      el.classList.remove('conn-error');
+    }, 400);
+    // Toast above the node
+    var existing = el.querySelector('.conn-error-toast');
+    if (existing) {
+      existing.remove();
+    }
+    var toast = document.createElement('div');
+    toast.className = 'conn-error-toast';
+    toast.textContent = message;
+    el.style.position = 'absolute';
+    el.appendChild(toast);
+    setTimeout(function() {
+      if (toast.parentNode) {
+        toast.parentNode.removeChild(toast);
+      }
+    }, 3000);
+  },
+
+  validateConnection: function(fromNodeId, toNodeId, toPort) {
+    // Returns null if connection is valid, or an error string if not.
+    var fromNode = State.nodes[fromNodeId];
+    var toNode = State.nodes[toNodeId];
+    if (!fromNode || !toNode) {
+      return null;
+    }
+
+    // What item is the source carrying?
+    var sourceItem = null;
+    if (fromNode.computed) {
+      sourceItem = fromNode.computed.item_out || fromNode.computed.item || null;
+    }
+    // If source has no computed item yet (newly placed, no upstream), allow it
+    if (!sourceItem || sourceItem === 'unknown' || sourceItem === 'custom') {
+      return null;
+    }
+
+    var toType = toNode.type;
+
+    // Belts accept anything
+    if (toType === 'belt') {
+      return null;
+    }
+
+    // Generic consumer — accepts anything
+    if (toType === 'generic_consumer') {
+      return null;
+    }
+
+    // Water pump / oil extractor — no inputs at all, shouldn't be a target
+    if (toType === 'water_pump' || toType === 'oil_extractor') {
+      return '⚠ This node has no inputs';
+    }
+
+    // Mining node — no inputs
+    if (toType === 'mining') {
+      return '⚠ Mining nodes have no inputs';
+    }
+
+    // Thermal plant — accepts only fuel items
+    if (toType === 'thermal_plant') {
+      var validFuels = ['coal','energetic_graphite','hydrogen','refined_oil','fire_ice','plant_fuel','wood','b_conveyor_mk1'];
+      // Actually any item can physically be fed, the plant just burns it.
+      // Just check it's not power or a building item.
+      if (sourceItem === 'power_generic') {
+        return '⚠ Cannot feed power into a power plant input';
+      }
+      return null;
+    }
+
+    // Mini fusion — only accepts deuteron fuel rods
+    if (toType === 'mini_fusion') {
+      if (sourceItem !== 'deuteron_fuel_rod') {
+        var srcName = (State.nodes[fromNodeId] && ITEMS[sourceItem]) ? ITEMS[sourceItem].name : sourceItem;
+        return '⚠ Needs Deuteron Fuel Rod, not ' + srcName;
+      }
+      return null;
+    }
+
+    // Fractionator — only hydrogen
+    if (toType === 'fractionator') {
+      if (sourceItem !== 'hydrogen') {
+        var srcName2 = ITEMS[sourceItem] ? ITEMS[sourceItem].name : sourceItem;
+        return '⚠ Fractionator needs Hydrogen, not ' + srcName2;
+      }
+      return null;
+    }
+
+    // Arc smelter, assembler, oil refinery, particle collider, matrix lab, chemical_plant
+    // — check against recipe inputs
+    var recipeNodeTypes = ['arc_smelter','assembler','oil_refinery','particle_collider','matrix_lab'];
+    if (recipeNodeTypes.indexOf(toType) !== -1) {
+      var rec = RECIPES[toNode.props.recipe];
+      if (!rec) {
+        return null; // No recipe set yet, allow connection
+      }
+
+      // For multi-input nodes, toPort is 'in_N' — check that specific slot
+      var portIndex = -1;
+      var portMatch = toPort.match(/^in_(\d+)$/);
+      if (portMatch) {
+        portIndex = parseInt(portMatch[1]);
+      }
+
+      if (portIndex >= 0 && portIndex < rec.inputs.length) {
+        // Connecting to a specific recipe input slot
+        var expectedItem = rec.inputs[portIndex].item;
+        if (sourceItem !== expectedItem) {
+          var srcItemName = ITEMS[sourceItem] ? ITEMS[sourceItem].name : sourceItem;
+          var expItemName = ITEMS[expectedItem] ? ITEMS[expectedItem].name : expectedItem;
+          return '⚠ Slot expects ' + expItemName + ', not ' + srcItemName;
+        }
+        return null;
+      }
+
+      // Port is beyond recipe inputs (e.g. connecting to 'in' on a non-indexed port)
+      // Check if sourceItem appears anywhere in the recipe
+      var anyMatch = false;
+      for (var ri = 0; ri < rec.inputs.length; ri++) {
+        if (rec.inputs[ri].item === sourceItem) {
+          anyMatch = true;
+          break;
+        }
+      }
+      if (!anyMatch) {
+        var srcName3 = ITEMS[sourceItem] ? ITEMS[sourceItem].name : sourceItem;
+        var recLabel = rec.label || toNode.props.recipe;
+        return '⚠ ' + srcName3 + ' is not used in ' + recLabel;
+      }
+      return null;
+    }
+
+    // Chemical plant — if it has item_in set, validate against it
+    if (toType === 'chemical_plant') {
+      var expectedIn = toNode.props.item_in;
+      if (expectedIn && expectedIn !== 'custom' && sourceItem !== expectedIn) {
+        var srcN = ITEMS[sourceItem] ? ITEMS[sourceItem].name : sourceItem;
+        var expN = ITEMS[expectedIn] ? ITEMS[expectedIn].name : expectedIn;
+        return '⚠ Plant expects ' + expN + ', not ' + srcN;
+      }
+      return null;
+    }
+
+    // Oil refinery validation handled above via recipeNodeTypes
+    return null;
+  },
+
   addEdge: function(fromNode, fromPort, toNode, toPort) {
-    // remove existing edge to same input port
-    State.edges = State.edges.filter(function(e) {
-      return !(e.to_node === toNode && e.to_port === toPort);
-    });
+    var toNodeDef = State.nodes[toNode] ? NODE_DEFS[State.nodes[toNode].type] : null;
+    var isMergeable = toNodeDef && (State.nodes[toNode].type === 'belt');
+    if (isMergeable) {
+      // Belts accept multiple inputs — assign a unique port slot each time
+      // Count how many input edges already exist on this belt
+      var existingInputs = State.edges.filter(function(e) {
+        return e.to_node === toNode;
+      });
+      // Use a unique port id so we don't collide with existing connections
+      toPort = 'in_' + existingInputs.length;
+      // Make sure it's truly unique (in case of load/save ordering issues)
+      var usedPorts = {};
+      existingInputs.forEach(function(e) { usedPorts[e.to_port] = true; });
+      var slotIndex = 0;
+      while (usedPorts['in_' + slotIndex]) {
+        slotIndex++;
+      }
+      toPort = 'in_' + slotIndex;
+    } else {
+      // All other nodes: one connection per input port (replace existing)
+      State.edges = State.edges.filter(function(e) {
+        return !(e.to_node === toNode && e.to_port === toPort);
+      });
+    }
     State.edges.push({id:'edge_'+(State.nextId++),from_node:fromNode,from_port:fromPort,to_node:toNode,to_port:toPort});
+    // Rebuild belt node card so the new port appears
+    if (isMergeable) {
+      var beltEl = document.getElementById('node_' + toNode);
+      if (beltEl) {
+        beltEl.innerHTML = this.buildNodeHTML(State.nodes[toNode]);
+        this.bindNodeEvents(beltEl, State.nodes[toNode]);
+      }
+    }
     this.recalcAll();
     this.renderEdges();
     // Re-render props so recipe dropdown updates to match upstream item
@@ -913,10 +1127,29 @@ var App = {
   },
 
   deleteEdge: function(edgeId) {
+    // Find the edge before removing it so we know if a belt needs rebuilding
+    var edgeToRemove = null;
+    for (var ei = 0; ei < State.edges.length; ei++) {
+      if (State.edges[ei].id === edgeId) {
+        edgeToRemove = State.edges[ei];
+        break;
+      }
+    }
     State.edges = State.edges.filter(function(e) {
       return e.id !== edgeId;
     });
     State.selectedEdge = null;
+    // If we removed an edge going INTO a belt, rebuild that belt's card
+    if (edgeToRemove) {
+      var toNode = State.nodes[edgeToRemove.to_node];
+      if (toNode && toNode.type === 'belt') {
+        var beltEl = document.getElementById('node_' + toNode.id);
+        if (beltEl) {
+          beltEl.innerHTML = this.buildNodeHTML(toNode);
+          this.bindNodeEvents(beltEl, toNode);
+        }
+      }
+    }
     this.recalcAll();
     this.renderEdges();
     this.renderSidebar();
@@ -1062,25 +1295,64 @@ var App = {
     var html = '<div class="node-header" style="background:'+def.color+'22;border-color:'+def.color+'44">';
     html += '<span class="nh-icon">'+def.icon+'</span>';
     html += '<span class="nh-title">'+escHtml(label)+'</span>';
-    html += '<span class="nh-type">'+def.label+'</span>';
+    if (node.props.label && node.props.label !== def.label) {
+      html += '<span class="nh-type">'+def.label+'</span>';
+    }
+    if (node.props.count !== undefined && node.props.count > 0) {
+      html += '<span style="background:rgba(255,255,255,0.18);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;flex-shrink:0">x'+node.props.count+'</span>';
+    }
+    if (node.type === 'mining' && node.props.miners && node.props.miners.length > 0) {
+      html += '<span style="background:rgba(255,255,255,0.18);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;flex-shrink:0">x'+node.props.miners.length+'</span>';
+    }
     html += '<span class="nh-del" onclick="App.deleteNode(\''+node.id+'\')">✕</span>';
     html += '</div>';
     html += '<div class="node-body">';
-    // For multi-input machines, generate ports from recipe inputs dynamically
+    // Port generation strategy:
+    // - arc_smelter / assembler: one port per recipe ingredient
+    // - belt: one port per connected upstream edge + one spare "open" port
+    // - all others: ports from def.ports.inputs as defined
     var multiInputTypes = ['arc_smelter', 'assembler'];
     var isMultiInput = multiInputTypes.indexOf(node.type) !== -1;
     if (isMultiInput) {
       var rec = RECIPES[node.props.recipe];
-      var ports = rec ? rec.inputs : [{item:'input',qty:1}];
-      for (var pi = 0; pi < ports.length; pi++) {
-        var idef = ITEMS[ports[pi].item] ? ITEMS[ports[pi].item] : null;
-        var iname = idef ? idef.icon + ' ' + idef.name : ports[pi].item;
-        var pid = 'in_' + pi;
+      var recPorts = rec ? rec.inputs : [{item:'input',qty:1}];
+      for (var pi = 0; pi < recPorts.length; pi++) {
+        var idefRec = ITEMS[recPorts[pi].item] ? ITEMS[recPorts[pi].item] : null;
+        var inamRec = idefRec ? idefRec.icon + ' ' + idefRec.name : recPorts[pi].item;
+        var pidRec = 'in_' + pi;
         html += '<div class="port-row">';
-        html += '<div class="port input" id="port_'+node.id+'_'+pid+'" data-node="'+node.id+'" data-port="'+pid+'" data-dir="in"></div>';
-        html += '<span class="port-label" style="font-size:10px">'+iname+'</span>';
+        html += '<div class="port input" id="port_'+node.id+'_'+pidRec+'" data-node="'+node.id+'" data-port="'+pidRec+'" data-dir="in"></div>';
+        html += '<span class="port-label" style="font-size:10px">'+inamRec+'</span>';
         html += '</div>';
       }
+    } else if (node.type === 'belt') {
+      // Count existing connected input edges for this node
+      var connectedInputEdges = State.edges.filter(function(e) {
+        return e.to_node === node.id;
+      });
+      var usedSlots = {};
+      connectedInputEdges.forEach(function(e) { usedSlots[e.to_port] = true; });
+      // Render a port for each connected slot
+      var slotKeys = Object.keys(usedSlots).sort();
+      for (var si = 0; si < slotKeys.length; si++) {
+        var skey = slotKeys[si];
+        html += '<div class="port-row">';
+        html += '<div class="port input connected" id="port_'+node.id+'_'+skey+'" data-node="'+node.id+'" data-port="'+skey+'" data-dir="in" title="Input '+(si+1)+'"></div>';
+        html += '<span class="port-label" style="font-size:10px">In '+(si+1)+'</span>';
+        html += '</div>';
+      }
+      // Always render one spare open port for new connections
+      var nextSlotIdx = 0;
+      while (usedSlots['in_' + nextSlotIdx]) { nextSlotIdx++; }
+      var nextSlot = 'in_' + nextSlotIdx;
+      html += '<div class="port-row">';
+      html += '<div class="port input" id="port_'+node.id+'_'+nextSlot+'" data-node="'+node.id+'" data-port="'+nextSlot+'" data-dir="in" title="Connect input"></div>';
+      if (slotKeys.length === 0) {
+        html += '<span class="port-label" style="font-size:10px">In</span>';
+      } else {
+        html += '<span class="port-label" style="font-size:10px;color:var(--text3)">+ in</span>';
+      }
+      html += '</div>';
     } else if (def.ports.inputs.length > 0) {
       def.ports.inputs.forEach(function(port) {
         html += '<div class="port-row">';
@@ -1121,8 +1393,8 @@ var App = {
       // Item chip
       html += '<div style="display:flex;align-items:center;gap:5px;margin:4px 0 2px;padding:4px 7px;background:'+icolor+'22;border:1px solid '+icolor+'55;border-radius:6px">';
       html += '<span style="font-size:13px">'+iicon+'</span>';
-      html += '<span style="font-size:11px;font-weight:500;color:'+icolor+'">'+itemName(c.item)+'</span>';
-      html += '<span style="margin-left:auto;font-size:11px;font-weight:600;color:'+icolor+'">'+fmtRate(c.output_per_min)+'/min</span>';
+      html += '<span style="font-size:11px;font-weight:500;color:#fff">'+itemName(c.item)+'</span>';
+      html += '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#fff">'+fmtRate(c.output_per_min)+'/min</span>';
       html += '</div>';
     } else if (node.type === 'belt') {
       var bitem = c.item || c.upstream_item || node.upstream_item;
@@ -1131,34 +1403,39 @@ var App = {
       var bicon = bidef ? bidef.icon : '➡️';
       var bpct = c.load_pct || 0;
       var bclass = bpct <= 80 ? '#22c55e' : bpct <= 100 ? '#f59e0b' : '#ef4444';
-      // Item chip
+      // Item chip — shows source count if >1
       if (bidef) {
         html += '<div style="display:flex;align-items:center;gap:5px;margin:3px 0 2px;padding:3px 7px;background:'+bcolor+'22;border:1px solid '+bcolor+'55;border-radius:6px">';
         html += '<span style="font-size:12px">'+bicon+'</span>';
-        html += '<span style="font-size:10px;color:'+bcolor+'">'+bidef.name+'</span>';
+        html += '<span style="font-size:10px;color:#fff">'+bidef.name+'</span>';
+        if (c.source_count > 1) {
+          html += '<span style="margin-left:auto;font-size:9px;color:#fff">'+c.source_count+' sources</span>';
+        }
         html += '</div>';
       }
       // Load bar
-      html += '<div style="margin:3px 0;font-size:10px;color:var(--text3)">Load</div>';
-      html += '<div style="background:#1e2330;border-radius:3px;height:8px;overflow:hidden;margin-bottom:3px">';
+      html += '<div style="background:#1e2330;border-radius:3px;height:8px;overflow:hidden;margin-bottom:3px;margin-top:3px">';
       var fillPct = Math.min(bpct, 100);
       html += '<div style="height:100%;width:'+fillPct+'%;background:'+bclass+';border-radius:3px;transition:width .3s"></div>';
       html += '</div>';
       html += '<div style="display:flex;justify-content:space-between;font-size:10px">';
-      html += '<span style="color:'+bclass+'">'+bpct+'%</span>';
-      html += '<span style="color:var(--text3)">'+fmtRate(c.output_per_min)+' / '+c.capacity+'/min</span>';
+      html += '<span style="color:#fff">'+bpct+'%</span>';
+      html += '<span style="color:#fff">'+fmtRate(c.output_per_min)+' / '+c.capacity+'/min</span>';
       html += '</div>';
+      if (c.input_per_min > c.capacity) {
+        html += '<div style="font-size:9px;color:#ef4444;margin-top:2px">⚠ Overflow: '+fmtRate(c.input_per_min - c.capacity)+'/min lost</div>';
+      }
     } else if (node.type === 'thermal_plant' || node.type === 'mini_fusion') {
       var ec = (c.efficiency || 0) >= 90 ? '#22c55e' : (c.efficiency || 0) >= 50 ? '#f59e0b' : '#ef4444';
       var fuelItem = ITEMS[c.item_in] || null;
       if (fuelItem) {
         html += '<div style="display:flex;align-items:center;gap:4px;margin:3px 0;padding:3px 7px;background:'+fuelItem.color+'22;border:1px solid '+fuelItem.color+'44;border-radius:6px;font-size:10px">';
-        html += '<span>'+fuelItem.icon+'</span><span style="color:'+fuelItem.color+'">'+fuelItem.name+'</span>';
+        html += '<span>'+fuelItem.icon+'</span><span style="color:#fff">'+fuelItem.name+'</span>';
         html += '<span style="margin-left:auto;color:var(--text3)">→ ⚡</span>';
         html += '</div>';
       }
       html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:3px">';
-      html += '<span style="color:var(--text3)">Power</span><span style="font-weight:500;color:'+ec+'">'+fmtNum(c.output_per_min,2)+' MW</span>';
+      html += '<span style="color:#fff">Power</span><span style="font-weight:500;color:#fff">'+fmtNum(c.output_per_min,2)+' MW</span>';
       html += '</div>';
       // Efficiency bar
       html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden;margin:4px 0">';
@@ -1171,8 +1448,8 @@ var App = {
       var wicon = widef ? widef.icon : '💧';
       html += '<div style="display:flex;align-items:center;gap:5px;margin:4px 0 2px;padding:4px 7px;background:'+wcolor+'22;border:1px solid '+wcolor+'55;border-radius:6px">';
       html += '<span style="font-size:13px">'+wicon+'</span>';
-      html += '<span style="font-size:11px;font-weight:500;color:'+wcolor+'">'+(widef ? widef.name : witem)+'</span>';
-      html += '<span style="margin-left:auto;font-size:11px;font-weight:600;color:'+wcolor+'">'+fmtRate(c.output_per_min)+'/min</span>';
+      html += '<span style="font-size:11px;font-weight:500;color:#fff">'+(widef ? widef.name : witem)+'</span>';
+      html += '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#fff">'+fmtRate(c.output_per_min)+'/min</span>';
       html += '</div>';
     } else {
       // Production nodes: arc_smelter, assembler, chemical_plant, oil_refinery, particle_collider, matrix_lab
@@ -1189,8 +1466,8 @@ var App = {
           var iStatus = iRatio >= 0.95 ? '#22c55e' : iRatio >= 0.5 ? '#f59e0b' : '#ef4444';
           html += '<div style="display:flex;align-items:center;gap:4px;margin:2px 0;padding:2px 5px;background:'+icolor2+'15;border:1px solid '+icolor2+'33;border-radius:4px">';
           html += '<span style="font-size:11px">'+iicon2+'</span>';
-          html += '<span style="font-size:9px;color:'+icolor2+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+iname2+'</span>';
-          html += '<span style="font-size:9px;color:'+iStatus+';flex-shrink:0;margin-left:2px">'+fmtRate(inp2.arriving)+'/'+fmtRate(inp2.need)+'</span>';
+          html += '<span style="font-size:9px;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+iname2+'</span>';
+          html += '<span style="font-size:9px;color:#fff;flex-shrink:0;margin-left:2px">'+fmtRate(inp2.arriving)+'/'+fmtRate(inp2.need)+'</span>';
           html += '</div>';
         }
         // Output row
@@ -1200,8 +1477,8 @@ var App = {
           html += '<div style="display:flex;align-items:center;gap:4px;margin:3px 0 2px;padding:2px 5px;background:'+outColor2+'22;border:1px solid '+outColor2+'44;border-radius:4px">';
           html += '<span style="font-size:9px;color:var(--text3)">→</span>';
           html += '<span style="font-size:11px">'+outDef2.icon+'</span>';
-          html += '<span style="font-size:9px;color:'+outColor2+';flex:1">'+outDef2.name+'</span>';
-          html += '<span style="font-size:9px;font-weight:500;color:'+outColor2+'">'+fmtRate(c.output_per_min)+'/min</span>';
+          html += '<span style="font-size:9px;color:#fff;flex:1">'+outDef2.name+'</span>';
+          html += '<span style="font-size:9px;font-weight:500;color:#fff">'+fmtRate(c.output_per_min)+'/min</span>';
           html += '</div>';
         }
       } else if (c.item_in !== undefined || c.item_out !== undefined) {
@@ -1211,11 +1488,11 @@ var App = {
         var outColor = outDef ? outDef.color : '#6b7280';
         html += '<div style="display:flex;align-items:center;gap:4px;margin:4px 0 3px;font-size:11px">';
         if (inDef) {
-          html += '<span style="padding:2px 6px;background:'+inColor+'22;border:1px solid '+inColor+'44;border-radius:4px;color:'+inColor+'">'+inDef.icon+' '+inDef.name+'</span>';
+          html += '<span style="padding:2px 6px;background:'+inColor+'22;border:1px solid '+inColor+'44;border-radius:4px;color:#fff">'+inDef.icon+' '+inDef.name+'</span>';
         }
         html += '<span style="color:var(--text3);flex-shrink:0">→</span>';
         if (outDef) {
-          html += '<span style="padding:2px 6px;background:'+outColor+'22;border:1px solid '+outColor+'44;border-radius:4px;color:'+outColor+'">'+outDef.icon+' '+outDef.name+'</span>';
+          html += '<span style="padding:2px 6px;background:'+outColor+'22;border:1px solid '+outColor+'44;border-radius:4px;color:#fff">'+outDef.icon+' '+outDef.name+'</span>';
         }
         html += '</div>';
       }
@@ -1224,11 +1501,15 @@ var App = {
         var ec3 = eff >= 90 ? '#22c55e' : eff >= 50 ? '#f59e0b' : '#ef4444';
         if (!c.input_details || c.input_details.length === 0) {
           html += '<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:2px">';
-          html += '<span style="color:var(--text3)">'+fmtRate(c.output_per_min)+'/min</span>';
-          html += '<span style="color:'+ec3+'">'+eff+'%</span>';
+          html += '<span style="color:#fff">'+fmtRate(c.output_per_min)+'/min</span>';
+          html += '<span style="color:#fff">'+eff+'%</span>';
           html += '</div>';
         }
-        html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden;margin-top:3px">';
+        html += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#fff;margin-top:3px;margin-bottom:1px">';
+        html += '<span>Efficiency</span>';
+        html += '<span>'+fmtRate(c.output_per_min)+' / '+fmtRate(c.max_output||c.output_per_min)+' /min</span>';
+        html += '</div>';
+        html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden">';
         html += '<div style="height:100%;width:'+Math.min(eff,100)+'%;background:'+ec3+';border-radius:3px"></div>';
         html += '</div>';
       }
@@ -1401,7 +1682,7 @@ var App = {
           ratePill.setAttribute('x', mx);
           ratePill.setAttribute('y', my + 4);
           ratePill.setAttribute('text-anchor', 'middle');
-          ratePill.setAttribute('fill', strokeColor);
+          ratePill.setAttribute('fill', '#ffffff');
           ratePill.setAttribute('font-size', '10');
           ratePill.setAttribute('font-family', "'Segoe UI', system-ui, sans-serif");
           ratePill.setAttribute('font-weight', '500');
@@ -1414,12 +1695,21 @@ var App = {
     });
 
     // draw marquee selection rectangle
+    // State.marquee coords are in world/canvas space; convert to screen space for SVG
     if (State.marquee) {
       var m = State.marquee;
-      var rx = Math.min(m.startX, m.curX);
-      var ry = Math.min(m.startY, m.curY);
-      var rw = Math.abs(m.curX - m.startX);
-      var rh = Math.abs(m.curY - m.startY);
+      var mz = State.camera.zoom;
+      var mcx = State.camera.x;
+      var mcy = State.camera.y;
+      // Convert world corners to screen coords
+      var sx1 = m.startX * mz + mcx;
+      var sy1 = m.startY * mz + mcy;
+      var sx2 = m.curX   * mz + mcx;
+      var sy2 = m.curY   * mz + mcy;
+      var rx = Math.min(sx1, sx2);
+      var ry = Math.min(sy1, sy2);
+      var rw = Math.abs(sx2 - sx1);
+      var rh = Math.abs(sy2 - sy1);
       if (rw > 2 || rh > 2) {
         var marqRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
         marqRect.setAttribute('x', rx);
@@ -1840,10 +2130,18 @@ var App = {
     if (State.tab === 'props') {
       this.renderSidebar();
     }
-    // update node header if label changed
+    // update node header if label or count changed
     var headerEl = document.querySelector('#node_' + nodeId + ' .nh-title');
     if (headerEl && key === 'label') {
       headerEl.textContent = val || NODE_DEFS[node.type].label;
+    }
+    // Rebuild full header when count changes so count badge updates
+    if (key === 'count') {
+      var nodeEl2 = document.getElementById('node_' + nodeId);
+      if (nodeEl2) {
+        nodeEl2.innerHTML = this.buildNodeHTML(node);
+        this.bindNodeEvents(nodeEl2, node);
+      }
     }
   },
 
@@ -1864,6 +2162,11 @@ var App = {
       return;
     }
     node.props.miners.push({veins:6});
+    var el = document.getElementById('node_' + nodeId);
+    if (el) {
+      el.innerHTML = this.buildNodeHTML(node);
+      this.bindNodeEvents(el, node);
+    }
     this.recalcAll();
     this.renderEdges();
     this.renderSidebar();
@@ -1875,6 +2178,11 @@ var App = {
       return;
     }
     node.props.miners.splice(idx, 1);
+    var el = document.getElementById('node_' + nodeId);
+    if (el) {
+      el.innerHTML = this.buildNodeHTML(node);
+      this.bindNodeEvents(el, node);
+    }
     this.recalcAll();
     this.renderEdges();
     this.renderSidebar();
@@ -2018,7 +2326,10 @@ var App = {
     wrap.addEventListener('wheel', function(e) {
       e.preventDefault();
       var factor = e.deltaY < 0 ? 1.1 : 0.9;
-      self.zoom(factor);
+      var rect = wrap.getBoundingClientRect();
+      var mouseX = e.clientX - rect.left;
+      var mouseY = e.clientY - rect.top;
+      self.zoomAt(factor, mouseX, mouseY);
     }, {passive: false});
 
     wrap.addEventListener('mousedown', function(e) {
@@ -2299,7 +2610,13 @@ var App = {
           var toN = portEl.dataset.node;
           var toP = portEl.dataset.port;
           if (fromN !== toN) {
-            self.addEdge(fromN, fromP, toN, toP);
+            // Validate before connecting
+            var validationError = self.validateConnection(fromN, toN, toP);
+            if (validationError) {
+              self.showConnectionError(toN, validationError);
+            } else {
+              self.addEdge(fromN, fromP, toN, toP);
+            }
           }
           State.connecting = null;
           self.renderEdges();
@@ -2321,10 +2638,27 @@ var App = {
   // ─── CAMERA ─────────────────────────────────────────────────────────────────
 
   zoom: function(factor) {
-    State.camera.zoom = Math.max(0.2, Math.min(3, State.camera.zoom * factor));
+    // Zoom from center of viewport (used by +/- buttons)
+    var wrap = document.getElementById('canvas-wrap');
+    var cx = wrap.clientWidth / 2;
+    var cy = wrap.clientHeight / 2;
+    this.zoomAt(factor, cx, cy);
+  },
+
+  zoomAt: function(factor, screenX, screenY) {
+    // Zoom so the canvas point under (screenX, screenY) stays fixed
+    var oldZoom = State.camera.zoom;
+    var newZoom = Math.max(0.2, Math.min(3, oldZoom * factor));
+    // World-space point under the cursor
+    var worldX = (screenX - State.camera.x) / oldZoom;
+    var worldY = (screenY - State.camera.y) / oldZoom;
+    // Adjust camera so worldX/Y maps back to screenX/Y at the new zoom
+    State.camera.zoom = newZoom;
+    State.camera.x = screenX - worldX * newZoom;
+    State.camera.y = screenY - worldY * newZoom;
     this.applyCamera();
     this.renderEdges();
-    document.getElementById('zoom-label').textContent = Math.round(State.camera.zoom * 100) + '%';
+    document.getElementById('zoom-label').textContent = Math.round(newZoom * 100) + '%';
   },
 
   applyCamera: function() {
