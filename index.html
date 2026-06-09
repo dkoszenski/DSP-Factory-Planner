@@ -1084,7 +1084,7 @@ var App = {
     } else if (def.ports.inputs.length > 0) {
       def.ports.inputs.forEach(function(port) {
         html += '<div class="port-row">';
-        html += '<div class="port input" id="port_'+node.id+'_in_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="in"></div>';
+        html += '<div class="port input" id="port_'+node.id+'_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="in"></div>';
         html += '<span class="port-label">'+port.label+'</span>';
         html += '</div>';
       });
@@ -1095,7 +1095,7 @@ var App = {
       def.ports.outputs.forEach(function(port) {
         html += '<div class="port-row" style="justify-content:flex-end;gap:6px">';
         html += '<span class="port-label" style="flex:1;text-align:right;padding-right:4px">'+port.label+'</span>';
-        html += '<div class="port output" id="port_'+node.id+'_out_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="out" style="flex-shrink:0"></div>';
+        html += '<div class="port output" id="port_'+node.id+'_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="out" style="flex-shrink:0"></div>';
         html += '</div>';
       });
     }
@@ -1259,8 +1259,8 @@ var App = {
         return;
       }
 
-      var fromEl = document.getElementById('port_' + edge.from_node + '_out_' + edge.from_port);
-      var toEl = document.getElementById('port_' + edge.to_node + '_in_' + edge.to_port);
+      var fromEl = document.getElementById('port_' + edge.from_node + '_' + edge.from_port);
+      var toEl = document.getElementById('port_' + edge.to_node + '_' + edge.to_port);
       if (!fromEl || !toEl) {
         return;
       }
