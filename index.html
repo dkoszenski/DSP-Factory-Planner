@@ -74,6 +74,7 @@ header .subtitle{font-size:12px;color:var(--text3)}
 .node-el{position:absolute;border-radius:8px;border:2px solid var(--border2);background:var(--bg3);min-width:160px;cursor:grab;user-select:none;transition:border-color .15s,box-shadow .15s}
 .node-el:hover{border-color:var(--border2)}
 .node-el.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.25)}
+.node-el.multi-selected{border-color:#60a5fa;box-shadow:0 0 0 2px rgba(96,165,250,.35);border-style:dashed}
 .node-el.dragging{cursor:grabbing;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 .node-header{padding:8px 12px;border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;display:flex;align-items:center;gap:6px}
 .node-header .nh-icon{font-size:16px}
@@ -266,7 +267,62 @@ var ITEMS = {
   foundation:{name:'Foundation',icon:'🧱',color:'#78716c'},
   // Special/power
   power_generic:{name:'Power (generic)',icon:'⚡',color:'#fbbf24'},
-  custom:{name:'Custom Item',icon:'📦',color:'#6b7280'}
+  custom:{name:'Custom Item',icon:'📦',color:'#6b7280'},
+  // Buildings
+  b_conveyor_mk1:{name:'Conveyor Belt Mk.I',icon:'➡️',color:'#1e40af'},
+  b_conveyor_mk2:{name:'Conveyor Belt Mk.II',icon:'➡️',color:'#1d4ed8'},
+  b_conveyor_mk3:{name:'Conveyor Belt Mk.III',icon:'➡️',color:'#2563eb'},
+  b_sorter_mk1:{name:'Sorter Mk.I',icon:'🔀',color:'#0891b2'},
+  b_sorter_mk2:{name:'Sorter Mk.II',icon:'🔀',color:'#0284c7'},
+  b_sorter_mk3:{name:'Sorter Mk.III',icon:'🔀',color:'#0369a1'},
+  b_splitter:{name:'Splitter',icon:'✂️',color:'#475569'},
+  b_storage_mk1:{name:'Storage Mk.I',icon:'📦',color:'#78716c'},
+  b_storage_mk2:{name:'Storage Mk.II',icon:'📦',color:'#57534e'},
+  b_storage_tank:{name:'Storage Tank',icon:'🛢',color:'#44403c'},
+  b_piler:{name:'Automatic Piler',icon:'📚',color:'#64748b'},
+  b_traffic_monitor:{name:'Traffic Monitor',icon:'🚦',color:'#374151'},
+  b_spray_coater:{name:'Spray Coater',icon:'🎨',color:'#9333ea'},
+  b_mining_machine:{name:'Mining Machine',icon:'⛏️',color:'#92400e'},
+  b_water_pump:{name:'Water Pump',icon:'💧',color:'#0369a1'},
+  b_oil_extractor:{name:'Oil Extractor',icon:'🛢',color:'#78350f'},
+  b_oil_refinery:{name:'Oil Refinery',icon:'⚗️',color:'#7c2d12'},
+  b_chemical_plant:{name:'Chemical Plant',icon:'⚗️',color:'#065f46'},
+  b_quantum_chemical_plant:{name:'Quantum Chemical Plant',icon:'⚗️',color:'#134e4a'},
+  b_arc_smelter:{name:'Arc Smelter',icon:'🔥',color:'#9a3412'},
+  b_plane_smelter:{name:'Plane Smelter',icon:'🔥',color:'#b45309'},
+  b_negentropy_smelter:{name:'Negentropy Smelter',icon:'🔥',color:'#92400e'},
+  b_assembler_mk1:{name:'Assembling Machine Mk.I',icon:'🏭',color:'#1e3a5f'},
+  b_assembler_mk2:{name:'Assembling Machine Mk.II',icon:'🏭',color:'#1e40af'},
+  b_assembler_mk3:{name:'Assembling Machine Mk.III',icon:'🏭',color:'#1d4ed8'},
+  b_recomposing_assembler:{name:'Re-Composing Assembler',icon:'🏭',color:'#312e81'},
+  b_fractionator:{name:'Fractionator',icon:'🧫',color:'#0f766e'},
+  b_particle_collider:{name:'Miniature Particle Collider',icon:'⚛️',color:'#4c1d95'},
+  b_matrix_lab:{name:'Matrix Lab',icon:'🔬',color:'#1e3a5f'},
+  b_self_evolution_lab:{name:'Self-Evolution Lab',icon:'🔬',color:'#312e81'},
+  b_wind_turbine:{name:'Wind Turbine',icon:'💨',color:'#0891b2'},
+  b_solar_panel:{name:'Solar Panel',icon:'☀️',color:'#ca8a04'},
+  b_thermal_plant:{name:'Thermal Power Plant',icon:'🔋',color:'#4c1d95'},
+  b_mini_fusion:{name:'Mini Fusion Power Plant',icon:'☢️',color:'#3730a3'},
+  b_geothermal:{name:'Geothermal Power Station',icon:'🌋',color:'#7c2d12'},
+  b_artificial_star:{name:'Artificial Star',icon:'⭐',color:'#713f12'},
+  b_ray_receiver:{name:'Ray Receiver',icon:'📡',color:'#1e3a5f'},
+  b_energy_exchanger:{name:'Energy Exchanger',icon:'🔄',color:'#374151'},
+  b_accumulator:{name:'Accumulator',icon:'🔋',color:'#1e40af'},
+  b_tesla_tower:{name:'Tesla Tower',icon:'⚡',color:'#1d4ed8'},
+  b_wireless_tower:{name:'Wireless Power Tower',icon:'📡',color:'#2563eb'},
+  b_satellite_substation:{name:'Satellite Substation',icon:'🛰️',color:'#1e3a5f'},
+  b_planetary_logistics:{name:'Planetary Logistics Station',icon:'🏗',color:'#0f766e'},
+  b_interstellar_logistics:{name:'Interstellar Logistics Station',icon:'🚀',color:'#065f46'},
+  b_orbital_collector:{name:'Orbital Collector',icon:'🌍',color:'#0369a1'},
+  b_em_rail_ejector:{name:'EM-Rail Ejector',icon:'💫',color:'#7c3aed'},
+  b_vertical_silo:{name:'Vertical Launching Silo',icon:'🚀',color:'#1e3a5f'},
+  b_gauss_turret:{name:'Gauss Turret',icon:'🎯',color:'#374151'},
+  b_laser_turret:{name:'Laser Turret',icon:'🔴',color:'#dc2626'},
+  b_plasma_turret:{name:'Plasma Turret',icon:'🔵',color:'#2563eb'},
+  b_missile_turret:{name:'Missile Turret',icon:'🚀',color:'#92400e'},
+  b_battlefield_analysis:{name:'Battlefield Analysis Base',icon:'🏛',color:'#374151'},
+  b_signal_tower:{name:'Signal Tower',icon:'📶',color:'#0891b2'},
+  b_planetary_shield:{name:'Planetary Shield Generator',icon:'🛡',color:'#1e40af'}
 }
 
 var RECIPES = {
@@ -352,10 +408,147 @@ var RECIPES = {
   structure_matrix: {label:'Structure Matrix',inputs:[{item:'diamond',qty:1},{item:'titanium_crystal',qty:1}],outputs:[{item:'structure_matrix',qty:1}],time:8,machine:'matrix_lab'},
   information_matrix:{label:'Information Matrix',inputs:[{item:'processor',qty:2},{item:'particle_broadband',qty:1}],outputs:[{item:'information_matrix',qty:1}],time:10,machine:'matrix_lab'},
   gravity_matrix:   {label:'Gravity Matrix',inputs:[{item:'graviton_lens',qty:1},{item:'quantum_chip',qty:1}],outputs:[{item:'gravity_matrix',qty:1}],time:24,machine:'matrix_lab'},
-  universe_matrix:  {label:'Universe Matrix',inputs:[{item:'em_matrix',qty:1},{item:'energy_matrix',qty:1},{item:'structure_matrix',qty:1},{item:'information_matrix',qty:1},{item:'gravity_matrix',qty:1},{item:'antimatter',qty:1}],outputs:[{item:'universe_matrix',qty:1}],time:15,machine:'matrix_lab'}
+  universe_matrix:  {label:'Universe Matrix',inputs:[{item:'em_matrix',qty:1},{item:'energy_matrix',qty:1},{item:'structure_matrix',qty:1},{item:'information_matrix',qty:1},{item:'gravity_matrix',qty:1},{item:'antimatter',qty:1}],outputs:[{item:'universe_matrix',qty:1}],time:15,machine:'matrix_lab'},
+  // === BUILDINGS (assembled in Assembler) ===
+  // Logistics & Storage
+  b_conveyor_mk1:   {label:'Conveyor Belt Mk.I',inputs:[{item:'iron_ingot',qty:2},{item:'gear',qty:1}],outputs:[{item:'b_conveyor_mk1',qty:3}],time:1,machine:'assembler'},
+  b_conveyor_mk2:   {label:'Conveyor Belt Mk.II',inputs:[{item:'b_conveyor_mk1',qty:3},{item:'em_turbine',qty:1}],outputs:[{item:'b_conveyor_mk2',qty:3}],time:1,machine:'assembler'},
+  b_conveyor_mk3:   {label:'Conveyor Belt Mk.III',inputs:[{item:'b_conveyor_mk2',qty:3},{item:'super_mag_ring',qty:1},{item:'graphene',qty:1}],outputs:[{item:'b_conveyor_mk3',qty:3}],time:1,machine:'assembler'},
+  b_sorter_mk1:     {label:'Sorter Mk.I',inputs:[{item:'iron_ingot',qty:1},{item:'gear',qty:1}],outputs:[{item:'b_sorter_mk1',qty:1}],time:1,machine:'assembler'},
+  b_sorter_mk2:     {label:'Sorter Mk.II',inputs:[{item:'b_sorter_mk1',qty:2},{item:'motor',qty:1}],outputs:[{item:'b_sorter_mk2',qty:2}],time:1,machine:'assembler'},
+  b_sorter_mk3:     {label:'Sorter Mk.III',inputs:[{item:'b_sorter_mk2',qty:2},{item:'em_turbine',qty:1}],outputs:[{item:'b_sorter_mk3',qty:2}],time:1,machine:'assembler'},
+  b_splitter:       {label:'Splitter',inputs:[{item:'iron_ingot',qty:3},{item:'gear',qty:2},{item:'circuit_board',qty:1}],outputs:[{item:'b_splitter',qty:1}],time:2,machine:'assembler'},
+  b_storage_mk1:    {label:'Storage Mk.I',inputs:[{item:'iron_ingot',qty:4},{item:'stone_brick',qty:4}],outputs:[{item:'b_storage_mk1',qty:1}],time:2,machine:'assembler'},
+  b_storage_mk2:    {label:'Storage Mk.II',inputs:[{item:'steel',qty:8},{item:'stone_brick',qty:8}],outputs:[{item:'b_storage_mk2',qty:1}],time:4,machine:'assembler'},
+  b_storage_tank:   {label:'Storage Tank',inputs:[{item:'iron_ingot',qty:8},{item:'stone_brick',qty:4},{item:'glass',qty:4}],outputs:[{item:'b_storage_tank',qty:1}],time:4,machine:'assembler'},
+  b_piler:          {label:'Automatic Piler',inputs:[{item:'b_conveyor_mk1',qty:1},{item:'gear',qty:1},{item:'circuit_board',qty:1}],outputs:[{item:'b_piler',qty:1}],time:1,machine:'assembler'},
+  b_traffic_monitor:{label:'Traffic Monitor',inputs:[{item:'iron_ingot',qty:2},{item:'glass',qty:2},{item:'circuit_board',qty:1}],outputs:[{item:'b_traffic_monitor',qty:1}],time:2,machine:'assembler'},
+  b_spray_coater:   {label:'Spray Coater',inputs:[{item:'steel',qty:4},{item:'plastic',qty:2},{item:'circuit_board',qty:2}],outputs:[{item:'b_spray_coater',qty:1}],time:3,machine:'assembler'},
+  // Production buildings
+  b_mining_machine: {label:'Mining Machine',inputs:[{item:'iron_ingot',qty:4},{item:'circuit_board',qty:2},{item:'magnetic_coil',qty:2},{item:'gear',qty:4}],outputs:[{item:'b_mining_machine',qty:1}],time:3,machine:'assembler'},
+  b_water_pump:     {label:'Water Pump',inputs:[{item:'iron_ingot',qty:8},{item:'stone_brick',qty:4},{item:'motor',qty:4},{item:'circuit_board',qty:2}],outputs:[{item:'b_water_pump',qty:1}],time:4,machine:'assembler'},
+  b_oil_extractor:  {label:'Oil Extractor',inputs:[{item:'steel',qty:12},{item:'stone_brick',qty:12},{item:'circuit_board',qty:6},{item:'plasma_exciter',qty:6}],outputs:[{item:'b_oil_extractor',qty:1}],time:8,machine:'assembler'},
+  b_arc_smelter:    {label:'Arc Smelter',inputs:[{item:'iron_ingot',qty:4},{item:'stone_brick',qty:2},{item:'circuit_board',qty:4},{item:'magnetic_coil',qty:4}],outputs:[{item:'b_arc_smelter',qty:1}],time:3,machine:'assembler'},
+  b_plane_smelter:  {label:'Plane Smelter',inputs:[{item:'b_arc_smelter',qty:1},{item:'titanium_alloy',qty:5},{item:'circuit_board',qty:5},{item:'plasma_exciter',qty:4}],outputs:[{item:'b_plane_smelter',qty:1}],time:5,machine:'assembler'},
+  b_assembler_mk1:  {label:'Assembling Machine Mk.I',inputs:[{item:'iron_ingot',qty:4},{item:'gear',qty:8},{item:'circuit_board',qty:4}],outputs:[{item:'b_assembler_mk1',qty:1}],time:2,machine:'assembler'},
+  b_assembler_mk2:  {label:'Assembling Machine Mk.II',inputs:[{item:'b_assembler_mk1',qty:1},{item:'graphene',qty:4},{item:'processor',qty:1}],outputs:[{item:'b_assembler_mk2',qty:1}],time:3,machine:'assembler'},
+  b_assembler_mk3:  {label:'Assembling Machine Mk.III',inputs:[{item:'b_assembler_mk2',qty:1},{item:'particle_broadband',qty:2},{item:'processor',qty:2}],outputs:[{item:'b_assembler_mk3',qty:1}],time:4,machine:'assembler'},
+  b_oil_refinery:   {label:'Oil Refinery',inputs:[{item:'steel',qty:10},{item:'stone_brick',qty:10},{item:'circuit_board',qty:6},{item:'plasma_exciter',qty:6}],outputs:[{item:'b_oil_refinery',qty:1}],time:6,machine:'assembler'},
+  b_chemical_plant: {label:'Chemical Plant',inputs:[{item:'steel',qty:8},{item:'stone_brick',qty:8},{item:'glass',qty:8},{item:'circuit_board',qty:2}],outputs:[{item:'b_chemical_plant',qty:1}],time:5,machine:'assembler'},
+  b_fractionator:   {label:'Fractionator',inputs:[{item:'steel',qty:8},{item:'stone_brick',qty:4},{item:'gear',qty:4},{item:'graphene',qty:4}],outputs:[{item:'b_fractionator',qty:1}],time:3,machine:'assembler'},
+  b_particle_collider:{label:'Miniature Particle Collider',inputs:[{item:'frame_material',qty:4},{item:'titanium_alloy',qty:8},{item:'graphene',qty:8},{item:'processor',qty:4},{item:'super_mag_ring',qty:4}],outputs:[{item:'b_particle_collider',qty:1}],time:10,machine:'assembler'},
+  b_matrix_lab:     {label:'Matrix Lab',inputs:[{item:'iron_ingot',qty:8},{item:'glass',qty:4},{item:'circuit_board',qty:4},{item:'magnetic_coil',qty:4}],outputs:[{item:'b_matrix_lab',qty:1}],time:3,machine:'assembler'},
+  b_spray_coater2:  {label:'Spray Coater (alt)',inputs:[{item:'steel',qty:4},{item:'plastic',qty:2},{item:'circuit_board',qty:2}],outputs:[{item:'b_spray_coater',qty:1}],time:3,machine:'assembler'},
+  // Power buildings
+  b_wind_turbine:   {label:'Wind Turbine',inputs:[{item:'iron_ingot',qty:6},{item:'gear',qty:1},{item:'magnetic_coil',qty:3}],outputs:[{item:'b_wind_turbine',qty:1}],time:2,machine:'assembler'},
+  b_solar_panel:    {label:'Solar Panel',inputs:[{item:'copper_ingot',qty:10},{item:'high_purity_silicon',qty:10},{item:'circuit_board',qty:5}],outputs:[{item:'b_solar_panel',qty:1}],time:5,machine:'assembler'},
+  b_thermal_plant:  {label:'Thermal Power Plant',inputs:[{item:'iron_ingot',qty:10},{item:'stone_brick',qty:4},{item:'gear',qty:4},{item:'magnetic_coil',qty:4}],outputs:[{item:'b_thermal_plant',qty:1}],time:5,machine:'assembler'},
+  b_mini_fusion:    {label:'Mini Fusion Power Plant',inputs:[{item:'titanium_alloy',qty:12},{item:'super_mag_ring',qty:6},{item:'processor',qty:12},{item:'particle_container',qty:6}],outputs:[{item:'b_mini_fusion',qty:1}],time:10,machine:'assembler'},
+  b_geothermal:     {label:'Geothermal Power Station',inputs:[{item:'steel',qty:12},{item:'circuit_board',qty:8},{item:'plasma_exciter',qty:4},{item:'magnetic_coil',qty:4}],outputs:[{item:'b_geothermal',qty:1}],time:8,machine:'assembler'},
+  b_accumulator:    {label:'Accumulator',inputs:[{item:'iron_ingot',qty:6},{item:'super_mag_ring',qty:6},{item:'crystal_silicon',qty:3}],outputs:[{item:'b_accumulator',qty:1}],time:5,machine:'assembler'},
+  b_energy_exchanger:{label:'Energy Exchanger',inputs:[{item:'titanium_alloy',qty:20},{item:'steel',qty:40},{item:'processor',qty:20},{item:'super_mag_ring',qty:20}],outputs:[{item:'b_energy_exchanger',qty:1}],time:15,machine:'assembler'},
+  b_ray_receiver:   {label:'Ray Receiver',inputs:[{item:'steel',qty:20},{item:'high_purity_silicon',qty:20},{item:'photon_combiner',qty:10},{item:'super_mag_ring',qty:20}],outputs:[{item:'b_ray_receiver',qty:1}],time:8,machine:'assembler'},
+  b_artificial_star:{label:'Artificial Star',inputs:[{item:'annihilation_sphere',qty:20},{item:'titanium_alloy',qty:20},{item:'frame_material',qty:10},{item:'quantum_chip',qty:10}],outputs:[{item:'b_artificial_star',qty:1}],time:30,machine:'assembler'},
+  // Power transmission
+  b_tesla_tower:    {label:'Tesla Tower',inputs:[{item:'iron_ingot',qty:2},{item:'magnetic_coil',qty:1}],outputs:[{item:'b_tesla_tower',qty:1}],time:1,machine:'assembler'},
+  b_wireless_tower: {label:'Wireless Power Tower',inputs:[{item:'titanium_ingot',qty:3},{item:'plasma_exciter',qty:3}],outputs:[{item:'b_wireless_tower',qty:1}],time:3,machine:'assembler'},
+  b_satellite_substation:{label:'Satellite Substation',inputs:[{item:'titanium_alloy',qty:10},{item:'processor',qty:2},{item:'super_mag_ring',qty:2}],outputs:[{item:'b_satellite_substation',qty:1}],time:5,machine:'assembler'},
+  // Logistics stations
+  b_planetary_logistics:{label:'Planetary Logistics Station',inputs:[{item:'steel',qty:40},{item:'titanium_ingot',qty:40},{item:'processor',qty:40},{item:'particle_container',qty:20}],outputs:[{item:'b_planetary_logistics',qty:1}],time:20,machine:'assembler'},
+  b_interstellar_logistics:{label:'Interstellar Logistics Station',inputs:[{item:'titanium_alloy',qty:40},{item:'titanium_glass',qty:40},{item:'processor',qty:40},{item:'particle_container',qty:20}],outputs:[{item:'b_interstellar_logistics',qty:1}],time:30,machine:'assembler'},
+  b_orbital_collector:{label:'Orbital Collector',inputs:[{item:'titanium_alloy',qty:200},{item:'super_mag_ring',qty:50},{item:'reinforced_thruster',qty:50},{item:'processor',qty:200}],outputs:[{item:'b_orbital_collector',qty:1}],time:30,machine:'assembler'},
+  // Dyson sphere
+  b_em_rail_ejector:{label:'EM-Rail Ejector',inputs:[{item:'steel',qty:20},{item:'gear',qty:20},{item:'processor',qty:5},{item:'super_mag_ring',qty:10}],outputs:[{item:'b_em_rail_ejector',qty:1}],time:6,machine:'assembler'},
+  b_vertical_silo:  {label:'Vertical Launching Silo',inputs:[{item:'titanium_alloy',qty:80},{item:'frame_material',qty:30},{item:'quantum_chip',qty:10}],outputs:[{item:'b_vertical_silo',qty:1}],time:30,machine:'assembler'},
+  // Combat
+  b_gauss_turret:   {label:'Gauss Turret',inputs:[{item:'titanium_alloy',qty:5},{item:'steel',qty:5},{item:'magnetic_coil',qty:5}],outputs:[{item:'b_gauss_turret',qty:1}],time:4,machine:'assembler'},
+  b_laser_turret:   {label:'Laser Turret',inputs:[{item:'titanium_ingot',qty:4},{item:'photon_combiner',qty:2},{item:'circuit_board',qty:2}],outputs:[{item:'b_laser_turret',qty:1}],time:4,machine:'assembler'},
+  b_plasma_turret:  {label:'Plasma Turret',inputs:[{item:'titanium_alloy',qty:5},{item:'plasma_exciter',qty:5},{item:'circuit_board',qty:5}],outputs:[{item:'b_plasma_turret',qty:1}],time:5,machine:'assembler'},
+  b_missile_turret: {label:'Missile Turret',inputs:[{item:'titanium_alloy',qty:4},{item:'processor',qty:2},{item:'thruster',qty:2}],outputs:[{item:'b_missile_turret',qty:1}],time:5,machine:'assembler'},
+  b_battlefield_analysis:{label:'Battlefield Analysis Base',inputs:[{item:'steel',qty:8},{item:'processor',qty:4},{item:'circuit_board',qty:4}],outputs:[{item:'b_battlefield_analysis',qty:1}],time:5,machine:'assembler'},
+  b_signal_tower:   {label:'Signal Tower',inputs:[{item:'steel',qty:6},{item:'circuit_board',qty:2},{item:'plasma_exciter',qty:2}],outputs:[{item:'b_signal_tower',qty:1}],time:3,machine:'assembler'},
+  b_planetary_shield:{label:'Planetary Shield Generator',inputs:[{item:'frame_material',qty:20},{item:'super_mag_ring',qty:20},{item:'particle_container',qty:20},{item:'processor',qty:20}],outputs:[{item:'b_planetary_shield',qty:1}],time:20,machine:'assembler'}
 }
 
 var BELT_CAPS = {mk1:360,mk2:720,mk3:1800};
+
+// ─── SHARED MULTI-INPUT MACHINE CALCULATOR ───────────────────────────────────
+// Used by arc_smelter and assembler. Handles any recipe with 1-N inputs.
+// Each input slot has its own sorter throughput cap. The limiting input
+// (the one with the worst supply:demand ratio) determines actual output rate.
+// inflowMap: {itemKey: rate_per_min} — what's actually arriving per item.
+// speedMult: assembler tier multiplier (1.0 for smelters).
+function calcMultiInputMachine(n, inflowMap, speedMult) {
+  var rec = RECIPES[n.props.recipe];
+  if (!rec) {
+    n.computed = {error: 'No recipe selected'};
+    return n.computed;
+  }
+  var cnt = n.props.count || 1;
+  if (!speedMult) {
+    speedMult = 1.0;
+  }
+  var effectiveTime = rec.time / speedMult;
+  var outSorterCap = SORTER_SPEEDS[n.props.output_sorter_tier] * 60 / (n.props.output_sorter_reach || 1) * cnt;
+  var outputQty = rec.outputs[0].qty;
+  var maxOutputByMachines = outputQty / effectiveTime * 60 * cnt;
+
+  // Per-input sorter cap (all inputs share the same sorter settings for now)
+  var inSorterCapPerItem = SORTER_SPEEDS[n.props.input_sorter_tier] * 60 / (n.props.input_sorter_reach || 1) * cnt;
+
+  // For each recipe input, find: need_per_min, available_per_min, fill_ratio
+  // The bottleneck is the input with the lowest fill_ratio
+  var inputDetails = [];
+  var bottleneckRatio = 1.0; // 1.0 = fully fed
+
+  for (var ii = 0; ii < rec.inputs.length; ii++) {
+    var inp = rec.inputs[ii];
+    var needPerMin = inp.qty / effectiveTime * 60 * cnt;
+    var available = (inflowMap && inflowMap[inp.item]) ? inflowMap[inp.item] : 0;
+    var capped = Math.min(available, inSorterCapPerItem, needPerMin);
+    var ratio = needPerMin > 0 ? capped / needPerMin : 0;
+    inputDetails.push({
+      item: inp.item,
+      qty: inp.qty,
+      need: needPerMin,
+      arriving: available,
+      effective: capped,
+      ratio: ratio
+    });
+    if (ratio < bottleneckRatio) {
+      bottleneckRatio = ratio;
+    }
+  }
+
+  // Output is scaled by the bottleneck ratio
+  var rawOutput = maxOutputByMachines * bottleneckRatio;
+  var outputAfterSorter = Math.min(rawOutput, outSorterCap);
+  var efficiency = maxOutputByMachines > 0 ? Math.round(outputAfterSorter / maxOutputByMachines * 100) : 0;
+
+  // Total inflow for display
+  var totalInflow = 0;
+  if (inflowMap) {
+    var ikeys = Object.keys(inflowMap);
+    for (var ik = 0; ik < ikeys.length; ik++) {
+      totalInflow += inflowMap[ikeys[ik]];
+    }
+  }
+
+  n.computed = {
+    input_per_min: totalInflow,
+    output_per_min: outputAfterSorter,
+    max_output: maxOutputByMachines,
+    output_sorter_cap: outSorterCap,
+    input_sorter_cap: inSorterCapPerItem,
+    item_in: rec.inputs[0].item,
+    item_out: rec.outputs[0].item,
+    efficiency: efficiency,
+    bottleneck_ratio: bottleneckRatio,
+    input_details: inputDetails,
+    input_count: rec.inputs.length
+  };
+  return n.computed;
+}
 var SORTER_SPEEDS = {mk1:1.5,mk2:3,mk3:6};
 
 var NODE_DEFS = {
@@ -388,74 +581,19 @@ var NODE_DEFS = {
   arc_smelter:{
     label:'Arc Smelter',icon:'🔥',color:'#9a3412',
     defaults:{count:1,recipe:'energetic_graphite',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1},
-    ports:{inputs:[{id:'in',label:'Input',item:'recipe_input'}],outputs:[{id:'out',label:'Output',item:'recipe_output'}]},
-    calc:function(n,inflow){
-      var rec=RECIPES[n.props.recipe];
-      if(!rec){n.computed={error:'No recipe'};return n.computed;}
-      var cnt=n.props.count||1;
-      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach;
-      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach;
-      var inputItemQty=rec.inputs[0].qty;
-      var outputItemQty=rec.outputs[0].qty;
-      var maxRatePerMachine=outputItemQty/rec.time*60;
-      var inputNeedPerMachine=inputItemQty/rec.time*60;
-      var maxThroughputByMachines=maxRatePerMachine*cnt;
-      var inputNeedTotal=inputNeedPerMachine*cnt;
-      var inSorterTotal=inSorterCap*cnt;
-      var outSorterTotal=outSorterCap*cnt;
-      var effectiveInput=Math.min(inflow||0,inSorterTotal,inputNeedTotal);
-      var machinesFed=inputNeedPerMachine>0?effectiveInput/inputNeedPerMachine:0;
-      var rawOutput=machinesFed*(outputItemQty/inputItemQty)*(inputItemQty/rec.time*60)/(inputItemQty/rec.time*60)*maxRatePerMachine;
-      rawOutput=(effectiveInput/inputItemQty)*outputItemQty;
-      var outputAfterSorter=Math.min(rawOutput,outSorterTotal);
-      n.computed={
-        input_per_min:inflow||0,
-        effective_input:effectiveInput,
-        output_per_min:outputAfterSorter,
-        max_output:maxThroughputByMachines,
-        input_sorter_cap:inSorterTotal,
-        output_sorter_cap:outSorterTotal,
-        input_need:inputNeedTotal,
-        item_in:rec.inputs[0].item,
-        item_out:rec.outputs[0].item,
-        efficiency:maxThroughputByMachines>0?Math.round(outputAfterSorter/maxThroughputByMachines*100):0
-      };
-      return n.computed;
+    ports:{inputs:[{id:'in_0',label:'Input',item:'recipe_input'}],outputs:[{id:'out',label:'Output',item:'recipe_output'}]},
+    calc:function(n,inflow,inflowMap){
+      return calcMultiInputMachine(n, inflowMap, 1.0);
     }
   },
   assembler:{
     label:'Assembler',icon:'🏭',color:'#1e3a5f',
     defaults:{count:1,recipe:'gear',tier:'mk2',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1},
-    ports:{inputs:[{id:'in',label:'Input',item:'recipe_input'}],outputs:[{id:'out',label:'Output',item:'recipe_output'}]},
-    calc:function(n,inflow){
-      var rec=RECIPES[n.props.recipe];
-      if(!rec){n.computed={error:'No recipe'};return n.computed;}
+    ports:{inputs:[{id:'in_0',label:'Input',item:'recipe_input'}],outputs:[{id:'out',label:'Output',item:'recipe_output'}]},
+    calc:function(n,inflow,inflowMap){
       var tiers={mk1:0.75,mk2:1.0,mk3:1.5};
       var speedMult=tiers[n.props.tier]||1;
-      var cnt=n.props.count||1;
-      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
-      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach*cnt;
-      var effectiveTime=rec.time/speedMult;
-      var inputQty=rec.inputs[0].qty;
-      var outputQty=rec.outputs[0].qty;
-      var maxOut=outputQty/effectiveTime*60*cnt;
-      var inputNeed=inputQty/effectiveTime*60*cnt;
-      var effectiveInput=Math.min(inflow||0,inSorterCap,inputNeed);
-      var rawOut=(effectiveInput/inputQty)*outputQty;
-      var outputAfterSorter=Math.min(rawOut,outSorterCap);
-      n.computed={
-        input_per_min:inflow||0,
-        effective_input:effectiveInput,
-        output_per_min:outputAfterSorter,
-        max_output:maxOut,
-        input_sorter_cap:inSorterCap,
-        output_sorter_cap:outSorterCap,
-        input_need:inputNeed,
-        item_in:rec.inputs[0].item,
-        item_out:rec.outputs[0].item,
-        efficiency:maxOut>0?Math.round(outputAfterSorter/maxOut*100):0
-      };
-      return n.computed;
+      return calcMultiInputMachine(n, inflowMap, speedMult);
     }
   },
   chemical_plant:{
@@ -685,6 +823,9 @@ var State = {
   edges: [],
   selected: null,
   selectedEdge: null,
+  multiSelected: {},     // {id: true} for multi-selection
+  marquee: null,         // {startX,startY,curX,curY} canvas-space
+  multiDragging: null,   // {startMouseX,startMouseY, starts:{id:{x,y}}}
   tab: 'nodes',
   camera: {x:0,y:0,zoom:1},
   dragging: null,
@@ -739,11 +880,21 @@ var App = {
       el.remove();
     }
     delete State.nodes[id];
+    delete State.multiSelected[id];
     if (State.selected === id) {
       State.selected = null;
     }
     this.recalcAll();
     this.renderEdges();
+    this.renderSidebar();
+  },
+
+  deleteMultiSelected: function() {
+    var ids = Object.keys(State.multiSelected);
+    for (var i = 0; i < ids.length; i++) {
+      this.deleteNode(ids[i]);
+    }
+    State.multiSelected = {};
     this.renderSidebar();
   },
 
@@ -805,62 +956,85 @@ var App = {
         return;
       }
 
-      // find inflow from upstream
-      var inflow = 0;
-      var upstream_item = null;
+      // Build per-item inflow map from all connected upstream nodes
+      // Key: item id, Value: total /min arriving for that item
+      var inflowMap = {};
       State.edges.forEach(function(e) {
         if (e.to_node === id) {
           var srcNode = State.nodes[e.from_node];
           if (srcNode && srcNode.computed) {
-            inflow += srcNode.computed.output_per_min || 0;
-            upstream_item = srcNode.computed.item_out || srcNode.computed.item || srcNode.upstream_item || null;
+            var ikey = srcNode.computed.item_out || srcNode.computed.item || null;
+            var rate = srcNode.computed.output_per_min || 0;
+            if (ikey && rate > 0) {
+              if (!inflowMap[ikey]) {
+                inflowMap[ikey] = 0;
+              }
+              inflowMap[ikey] += rate;
+            }
           }
         }
       });
+      // upstream_item: array of all connected item types (for filtering)
+      var upstream_items = Object.keys(inflowMap);
+      node.upstream_item = upstream_items.length === 1 ? upstream_items[0] : (upstream_items.length > 1 ? upstream_items[0] : null);
+      node.upstream_items = upstream_items;
+      // Legacy scalar inflow (sum of all inputs) kept for simple nodes
+      var inflow = 0;
+      var allItemKeys = Object.keys(inflowMap);
+      for (var fk = 0; fk < allItemKeys.length; fk++) {
+        inflow += inflowMap[allItemKeys[fk]];
+      }
 
-      node.upstream_item = upstream_item;
-
-      // Auto-fix recipe if upstream item changed and current recipe is incompatible
+      // Auto-fix recipe if the single connected item doesn't match the current recipe
+      // Only triggers on single-input connections — we don't override a deliberate multi-input setup
       var recipeNodeTypes = ['arc_smelter','assembler','oil_refinery','particle_collider','matrix_lab'];
       var isRecipeNode = recipeNodeTypes.indexOf(node.type) !== -1;
-      if (isRecipeNode && upstream_item && upstream_item !== 'unknown' && upstream_item !== 'custom') {
-        var machineMap = {arc_smelter:'arc_smelter',assembler:'assembler',oil_refinery:'oil_refinery',particle_collider:'particle_collider',matrix_lab:'matrix_lab'};
-        var mtype = machineMap[node.type];
-        var curRecipe = RECIPES[node.props.recipe];
-        var curValid = false;
-        if (curRecipe) {
-          for (var ci = 0; ci < curRecipe.inputs.length; ci++) {
-            if (curRecipe.inputs[ci].item === upstream_item) {
-              curValid = true;
-              break;
-            }
-          }
-        }
-        if (!curValid) {
-          // Find first valid recipe for this machine+item
-          var allKeys = Object.keys(RECIPES);
-          for (var ri = 0; ri < allKeys.length; ri++) {
-            var rk = allKeys[ri];
-            var r = RECIPES[rk];
-            if (r.machine !== mtype) {
-              continue;
-            }
-            var match = false;
-            for (var rij = 0; rij < r.inputs.length; rij++) {
-              if (r.inputs[rij].item === upstream_item) {
-                match = true;
+      if (isRecipeNode && upstream_items.length === 1) {
+        var singleItem = upstream_items[0];
+        if (singleItem && singleItem !== 'unknown' && singleItem !== 'custom' && singleItem !== 'power') {
+          var machineMap = {arc_smelter:'arc_smelter',assembler:'assembler',oil_refinery:'oil_refinery',particle_collider:'particle_collider',matrix_lab:'matrix_lab'};
+          var mtype = machineMap[node.type];
+          var curRecipe = RECIPES[node.props.recipe];
+          var curValid = false;
+          if (curRecipe && curRecipe.machine === mtype) {
+            for (var ci = 0; ci < curRecipe.inputs.length; ci++) {
+              if (curRecipe.inputs[ci].item === singleItem) {
+                curValid = true;
                 break;
               }
             }
-            if (match) {
-              node.props.recipe = rk;
-              break;
+          }
+          if (!curValid) {
+            var allKeys = Object.keys(RECIPES);
+            for (var ri = 0; ri < allKeys.length; ri++) {
+              var rk = allKeys[ri];
+              var r = RECIPES[rk];
+              if (r.machine !== mtype) {
+                continue;
+              }
+              var match = false;
+              for (var rij = 0; rij < r.inputs.length; rij++) {
+                if (r.inputs[rij].item === singleItem) {
+                  match = true;
+                  break;
+                }
+              }
+              if (match) {
+                node.props.recipe = rk;
+                // Rebuild node card so input ports update to new recipe
+                var autoEl = document.getElementById('node_' + id);
+                if (autoEl && (node.type === 'arc_smelter' || node.type === 'assembler')) {
+                  autoEl.innerHTML = App.buildNodeHTML(node);
+                  App.bindNodeEvents(autoEl, node);
+                }
+                break;
+              }
             }
           }
         }
       }
 
-      def.calc(node, inflow);
+      def.calc(node, inflow, inflowMap);
       self.updateNodeDisplay(node);
     });
   },
@@ -892,8 +1066,22 @@ var App = {
     html += '<span class="nh-del" onclick="App.deleteNode(\''+node.id+'\')">✕</span>';
     html += '</div>';
     html += '<div class="node-body">';
-    // input ports
-    if (def.ports.inputs.length > 0) {
+    // For multi-input machines, generate ports from recipe inputs dynamically
+    var multiInputTypes = ['arc_smelter', 'assembler'];
+    var isMultiInput = multiInputTypes.indexOf(node.type) !== -1;
+    if (isMultiInput) {
+      var rec = RECIPES[node.props.recipe];
+      var ports = rec ? rec.inputs : [{item:'input',qty:1}];
+      for (var pi = 0; pi < ports.length; pi++) {
+        var idef = ITEMS[ports[pi].item] ? ITEMS[ports[pi].item] : null;
+        var iname = idef ? idef.icon + ' ' + idef.name : ports[pi].item;
+        var pid = 'in_' + pi;
+        html += '<div class="port-row">';
+        html += '<div class="port input" id="port_'+node.id+'_'+pid+'" data-node="'+node.id+'" data-port="'+pid+'" data-dir="in"></div>';
+        html += '<span class="port-label" style="font-size:10px">'+iname+'</span>';
+        html += '</div>';
+      }
+    } else if (def.ports.inputs.length > 0) {
       def.ports.inputs.forEach(function(port) {
         html += '<div class="port-row">';
         html += '<div class="port input" id="port_'+node.id+'_in_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="in"></div>';
@@ -988,12 +1176,39 @@ var App = {
       html += '</div>';
     } else {
       // Production nodes: arc_smelter, assembler, chemical_plant, oil_refinery, particle_collider, matrix_lab
-      if (c.item_in !== undefined || c.item_out !== undefined) {
+      // Multi-input nodes show per-ingredient supply status
+      if (c.input_details && c.input_details.length > 0) {
+        // Per-input rows
+        for (var id2 = 0; id2 < c.input_details.length; id2++) {
+          var inp2 = c.input_details[id2];
+          var idef2 = ITEMS[inp2.item] ? ITEMS[inp2.item] : null;
+          var icolor2 = idef2 ? idef2.color : '#6b7280';
+          var iicon2 = idef2 ? idef2.icon : '📦';
+          var iname2 = idef2 ? idef2.name : inp2.item;
+          var iRatio = inp2.ratio || 0;
+          var iStatus = iRatio >= 0.95 ? '#22c55e' : iRatio >= 0.5 ? '#f59e0b' : '#ef4444';
+          html += '<div style="display:flex;align-items:center;gap:4px;margin:2px 0;padding:2px 5px;background:'+icolor2+'15;border:1px solid '+icolor2+'33;border-radius:4px">';
+          html += '<span style="font-size:11px">'+iicon2+'</span>';
+          html += '<span style="font-size:9px;color:'+icolor2+';flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+iname2+'</span>';
+          html += '<span style="font-size:9px;color:'+iStatus+';flex-shrink:0;margin-left:2px">'+fmtRate(inp2.arriving)+'/'+fmtRate(inp2.need)+'</span>';
+          html += '</div>';
+        }
+        // Output row
+        var outDef2 = (c.item_out && ITEMS[c.item_out]) ? ITEMS[c.item_out] : null;
+        var outColor2 = outDef2 ? outDef2.color : '#6b7280';
+        if (outDef2) {
+          html += '<div style="display:flex;align-items:center;gap:4px;margin:3px 0 2px;padding:2px 5px;background:'+outColor2+'22;border:1px solid '+outColor2+'44;border-radius:4px">';
+          html += '<span style="font-size:9px;color:var(--text3)">→</span>';
+          html += '<span style="font-size:11px">'+outDef2.icon+'</span>';
+          html += '<span style="font-size:9px;color:'+outColor2+';flex:1">'+outDef2.name+'</span>';
+          html += '<span style="font-size:9px;font-weight:500;color:'+outColor2+'">'+fmtRate(c.output_per_min)+'/min</span>';
+          html += '</div>';
+        }
+      } else if (c.item_in !== undefined || c.item_out !== undefined) {
         var inDef = (c.item_in && ITEMS[c.item_in]) ? ITEMS[c.item_in] : null;
         var outDef = (c.item_out && ITEMS[c.item_out]) ? ITEMS[c.item_out] : null;
         var inColor = inDef ? inDef.color : '#6b7280';
         var outColor = outDef ? outDef.color : '#6b7280';
-        // Input → Output flow row
         html += '<div style="display:flex;align-items:center;gap:4px;margin:4px 0 3px;font-size:11px">';
         if (inDef) {
           html += '<span style="padding:2px 6px;background:'+inColor+'22;border:1px solid '+inColor+'44;border-radius:4px;color:'+inColor+'">'+inDef.icon+' '+inDef.name+'</span>';
@@ -1007,10 +1222,12 @@ var App = {
       if (c.efficiency !== undefined) {
         var eff = c.efficiency || 0;
         var ec3 = eff >= 90 ? '#22c55e' : eff >= 50 ? '#f59e0b' : '#ef4444';
-        html += '<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:2px">';
-        html += '<span style="color:var(--text3)">'+fmtRate(c.output_per_min)+'/min</span>';
-        html += '<span style="color:'+ec3+'">'+eff+'%</span>';
-        html += '</div>';
+        if (!c.input_details || c.input_details.length === 0) {
+          html += '<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:2px">';
+          html += '<span style="color:var(--text3)">'+fmtRate(c.output_per_min)+'/min</span>';
+          html += '<span style="color:'+ec3+'">'+eff+'%</span>';
+          html += '</div>';
+        }
         html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden;margin-top:3px">';
         html += '<div style="height:100%;width:'+Math.min(eff,100)+'%;background:'+ec3+';border-radius:3px"></div>';
         html += '</div>';
@@ -1196,6 +1413,28 @@ var App = {
       svg.appendChild(g);
     });
 
+    // draw marquee selection rectangle
+    if (State.marquee) {
+      var m = State.marquee;
+      var rx = Math.min(m.startX, m.curX);
+      var ry = Math.min(m.startY, m.curY);
+      var rw = Math.abs(m.curX - m.startX);
+      var rh = Math.abs(m.curY - m.startY);
+      if (rw > 2 || rh > 2) {
+        var marqRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        marqRect.setAttribute('x', rx);
+        marqRect.setAttribute('y', ry);
+        marqRect.setAttribute('width', rw);
+        marqRect.setAttribute('height', rh);
+        marqRect.setAttribute('fill', 'rgba(59,130,246,0.08)');
+        marqRect.setAttribute('stroke', '#3b82f6');
+        marqRect.setAttribute('stroke-width', '1.5');
+        marqRect.setAttribute('stroke-dasharray', '6 3');
+        marqRect.setAttribute('rx', '4');
+        svg.appendChild(marqRect);
+      }
+    }
+
     // draw in-progress connection line
     if (State.connecting) {
       var fc = State.connecting;
@@ -1258,8 +1497,27 @@ var App = {
   },
 
   buildPropsHTML: function() {
+    var multiIds = Object.keys(State.multiSelected);
+    if (multiIds.length > 0) {
+      var html = '<div class="prop-label">'+multiIds.length+' nodes selected</div>';
+      html += '<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Drag any selected node to move all together. Press Delete to remove all.</div>';
+      html += '<div style="display:flex;flex-direction:column;gap:6px">';
+      for (var mi = 0; mi < multiIds.length; mi++) {
+        var mn = State.nodes[multiIds[mi]];
+        if (!mn) { continue; }
+        var mdef = NODE_DEFS[mn.type];
+        html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;cursor:pointer" data-nid="'+mn.id+'" onclick="App.selectNode(this.dataset.nid)">';
+        html += '<span>'+mdef.icon+'</span>';
+        html += '<span style="font-size:12px;font-weight:500">'+(mn.props.label || mdef.label)+'</span>';
+        html += '<span style="margin-left:auto;font-size:10px;color:var(--text3)">click to edit</span>';
+        html += '</div>';
+      }
+      html += '</div>';
+      html += '<button class="btn danger" style="width:100%;margin-top:12px" onclick="App.deleteMultiSelected()">🗑 Delete all selected</button>';
+      return html;
+    }
     if (!State.selected) {
-      return '<div class="no-select">Select a node to edit its properties</div>';
+      return '<div class="no-select">Select a node to edit its properties<br><br><span style="font-size:11px;color:var(--text3)">Tip: drag on empty canvas to box-select multiple nodes. Shift+click to add to selection.</span></div>';
     }
     var node = State.nodes[State.selected];
     if (!node) {
@@ -1297,14 +1555,21 @@ var App = {
       if (node.type === 'assembler') {
         html += this.propSelect(node, 'tier', 'Assembler tier', [{v:'mk1',l:'Mk.I (×0.75)'},{v:'mk2',l:'Mk.II (×1.0)'},{v:'mk3',l:'Mk.III (×1.5)'}]);
       }
-      if (node.upstream_item && node.upstream_item !== 'unknown' && node.upstream_item !== 'custom') {
-        var filteredCount = recipeOptions(node.type === 'arc_smelter' ? 'arc_smelter' : 'assembler', node.upstream_item).length;
-        var totalCount = recipeOptions(node.type === 'arc_smelter' ? 'arc_smelter' : 'assembler').length;
-        if (filteredCount < totalCount) {
-          html += '<div style="font-size:11px;color:var(--teal);margin-bottom:4px;padding:4px 8px;background:#0f2027;border-radius:4px;border:1px solid var(--teal)">🔗 Showing '+filteredCount+' of '+totalCount+' recipes that accept <strong>'+itemName(node.upstream_item)+'</strong></div>';
+      var mtype = node.type === 'arc_smelter' ? 'arc_smelter' : 'assembler';
+      var filterItems = node.upstream_items && node.upstream_items.length > 0 ? node.upstream_items : (node.upstream_item ? [node.upstream_item] : []);
+      var cleanFilterItems = filterItems.filter(function(fi){ return fi && fi !== 'unknown' && fi !== 'custom' && fi !== 'power'; });
+      if (cleanFilterItems.length > 0) {
+        var filteredCount = recipeOptions(mtype, cleanFilterItems).length;
+        var totalCount = recipeOptions(mtype).length;
+        if (filteredCount < totalCount && filteredCount > 0) {
+          var itemLabels = cleanFilterItems.map(function(fi){ return itemName(fi); }).join(' + ');
+          html += '<div style="font-size:11px;color:var(--teal);margin-bottom:4px;padding:4px 8px;background:#0f2027;border-radius:4px;border:1px solid var(--teal)">🔗 Filtered to '+filteredCount+' of '+totalCount+' recipes matching: <strong>'+itemLabels+'</strong></div>';
+        } else if (filteredCount === 0) {
+          html += '<div style="font-size:11px;color:var(--bad);margin-bottom:4px;padding:4px 8px;background:#2d0505;border-radius:4px;border:1px solid var(--bad)">⚠ No recipes match all connected inputs. Showing all recipes.</div>';
+          cleanFilterItems = [];
         }
       }
-      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions(node.type === 'arc_smelter' ? 'arc_smelter' : 'assembler', node.upstream_item));
+      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions(mtype, cleanFilterItems));
       html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square (full speed)'},{v:2,l:'2 squares (half speed)'},{v:3,l:'3 squares (1/3 speed)'}]);
@@ -1346,7 +1611,7 @@ var App = {
     } else if (node.type === 'oil_refinery') {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
-      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('oil_refinery', node.upstream_item));
+      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('oil_refinery', node.upstream_items || node.upstream_item));
       html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
@@ -1356,7 +1621,7 @@ var App = {
     } else if (node.type === 'particle_collider') {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
-      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('particle_collider', node.upstream_item));
+      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('particle_collider', node.upstream_items || node.upstream_item));
       html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
@@ -1375,7 +1640,7 @@ var App = {
     } else if (node.type === 'matrix_lab') {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
-      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('matrix_lab', node.upstream_item));
+      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('matrix_lab', node.upstream_items || node.upstream_item));
       html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
@@ -1560,6 +1825,16 @@ var App = {
       return;
     }
     node.props[key] = val;
+    // If recipe changed on a multi-input machine, rebuild the node card entirely
+    // so ports update to reflect new ingredient list
+    var multiInputTypes = ['arc_smelter', 'assembler'];
+    if (key === 'recipe' && multiInputTypes.indexOf(node.type) !== -1) {
+      var el = document.getElementById('node_' + nodeId);
+      if (el) {
+        el.innerHTML = this.buildNodeHTML(node);
+        this.bindNodeEvents(el, node);
+      }
+    }
     this.recalcAll();
     this.renderEdges();
     if (State.tab === 'props') {
@@ -1607,12 +1882,25 @@ var App = {
 
   // ─── SELECTION ──────────────────────────────────────────────────────────────
 
-  selectNode: function(id) {
+  selectNode: function(id, keepMulti) {
+    // Clear previous single selection highlight
     if (State.selected) {
       var prev = document.getElementById('node_' + State.selected);
       if (prev) {
         prev.classList.remove('selected');
       }
+    }
+    // Clear multi selection highlights unless keepMulti is true
+    if (!keepMulti) {
+      var oldMulti = Object.keys(State.multiSelected);
+      for (var mi = 0; mi < oldMulti.length; mi++) {
+        var mel = document.getElementById('node_' + oldMulti[mi]);
+        if (mel) {
+          mel.classList.remove('selected');
+          mel.classList.remove('multi-selected');
+        }
+      }
+      State.multiSelected = {};
     }
     State.selected = id;
     State.selectedEdge = null;
@@ -1624,6 +1912,98 @@ var App = {
     }
     if (State.tab === 'props' || State.tab === 'stats') {
       this.renderSidebar();
+    }
+  },
+
+  addToMultiSelection: function(id) {
+    if (State.multiSelected[id]) {
+      // Toggle off
+      delete State.multiSelected[id];
+      var el = document.getElementById('node_' + id);
+      if (el) {
+        el.classList.remove('multi-selected');
+        el.classList.remove('selected');
+      }
+    } else {
+      State.multiSelected[id] = true;
+      var el2 = document.getElementById('node_' + id);
+      if (el2) {
+        el2.classList.add('multi-selected');
+      }
+    }
+    // Clear single selection when going multi
+    if (State.selected) {
+      var prev = document.getElementById('node_' + State.selected);
+      if (prev) {
+        prev.classList.remove('selected');
+      }
+      State.selected = null;
+    }
+    if (State.tab === 'props') {
+      // Show multi-selection info in props
+      this.renderSidebar();
+    }
+  },
+
+  applyMarqueeSelection: function() {
+    if (!State.marquee) {
+      return;
+    }
+    var m = State.marquee;
+    var selX1 = Math.min(m.startX, m.curX);
+    var selY1 = Math.min(m.startY, m.curY);
+    var selX2 = Math.max(m.startX, m.curX);
+    var selY2 = Math.max(m.startY, m.curY);
+    // Only commit if the box was actually dragged a meaningful amount
+    var w = selX2 - selX1;
+    var h = selY2 - selY1;
+    if (w < 4 && h < 4) {
+      return;
+    }
+    // Clear old selection
+    var self = this;
+    Object.keys(State.multiSelected).forEach(function(mid) {
+      var mel = document.getElementById('node_' + mid);
+      if (mel) {
+        mel.classList.remove('multi-selected');
+        mel.classList.remove('selected');
+      }
+    });
+    State.multiSelected = {};
+    if (State.selected) {
+      var prev = document.getElementById('node_' + State.selected);
+      if (prev) {
+        prev.classList.remove('selected');
+      }
+      State.selected = null;
+    }
+    // Find nodes whose center falls inside the marquee (in canvas coords)
+    Object.values(State.nodes).forEach(function(node) {
+      var el = document.getElementById('node_' + node.id);
+      if (!el) {
+        return;
+      }
+      // Estimate node center in canvas space
+      var nw = el.offsetWidth || 180;
+      var nh = el.offsetHeight || 100;
+      var nx = node.x + nw / 2;
+      var ny = node.y + nh / 2;
+      if (nx >= selX1 && nx <= selX2 && ny >= selY1 && ny <= selY2) {
+        State.multiSelected[node.id] = true;
+        el.classList.add('multi-selected');
+      }
+    });
+    if (Object.keys(State.multiSelected).length === 1) {
+      // Only one node caught — convert to single selection
+      var onlyId = Object.keys(State.multiSelected)[0];
+      State.multiSelected = {};
+      var onlyEl = document.getElementById('node_' + onlyId);
+      if (onlyEl) {
+        onlyEl.classList.remove('multi-selected');
+      }
+      self.selectNode(onlyId);
+    } else if (Object.keys(State.multiSelected).length > 1) {
+      self.renderSidebar();
     }
   },
 
@@ -1642,6 +2022,7 @@ var App = {
     }, {passive: false});
 
     wrap.addEventListener('mousedown', function(e) {
+      // Middle mouse or alt+left = pan
       if (e.button === 1 || (e.button === 0 && e.altKey)) {
         isPanning = true;
         panStart = {x: e.clientX - State.camera.x, y: e.clientY - State.camera.y};
@@ -1649,11 +2030,21 @@ var App = {
         e.preventDefault();
         return;
       }
-      if (e.target === wrap || e.target.classList.contains('grid-bg') || e.target === document.getElementById('edge-svg')) {
-        self.selectNode(null);
-        State.selectedEdge = null;
-        self.renderEdges();
-        self.renderSidebar();
+      // Left click on canvas background
+      var onBackground = (e.target === wrap || e.target.classList.contains('grid-bg') || e.target === document.getElementById('edge-svg'));
+      if (e.button === 0 && onBackground) {
+        // Start marquee selection
+        var rect = wrap.getBoundingClientRect();
+        var cx = (e.clientX - rect.left - State.camera.x) / State.camera.zoom;
+        var cy = (e.clientY - rect.top - State.camera.y) / State.camera.zoom;
+        State.marquee = {startX: cx, startY: cy, curX: cx, curY: cy};
+        // Clear selection on plain click (not shift)
+        if (!e.shiftKey) {
+          self.selectNode(null);
+          State.selectedEdge = null;
+          self.renderEdges();
+          self.renderSidebar();
+        }
       }
     });
 
@@ -1666,25 +2057,54 @@ var App = {
         return;
       }
       if (State.connecting) {
-        var rect = wrap.getBoundingClientRect();
-        State.connecting.cx = e.clientX - rect.left;
-        State.connecting.cy = e.clientY - rect.top;
+        var rect2 = wrap.getBoundingClientRect();
+        State.connecting.cx = e.clientX - rect2.left;
+        State.connecting.cy = e.clientY - rect2.top;
         self.renderEdges();
       }
+      // Update marquee
+      if (State.marquee) {
+        var rect3 = wrap.getBoundingClientRect();
+        State.marquee.curX = (e.clientX - rect3.left - State.camera.x) / State.camera.zoom;
+        State.marquee.curY = (e.clientY - rect3.top - State.camera.y) / State.camera.zoom;
+        self.renderEdges(); // redraws marquee too
+        return;
+      }
+      // Single-node drag
       if (State.dragging) {
         var node = State.nodes[State.dragging.id];
         if (!node) {
           return;
         }
-        var dx = (e.clientX - State.dragging.startMouseX) / State.camera.zoom;
-        var dy = (e.clientY - State.dragging.startMouseY) / State.camera.zoom;
-        node.x = State.dragging.startNodeX + dx;
-        node.y = State.dragging.startNodeY + dy;
+        var ddx = (e.clientX - State.dragging.startMouseX) / State.camera.zoom;
+        var ddy = (e.clientY - State.dragging.startMouseY) / State.camera.zoom;
+        node.x = State.dragging.startNodeX + ddx;
+        node.y = State.dragging.startNodeY + ddy;
         var el = document.getElementById('node_' + node.id);
         if (el) {
           el.style.left = node.x + 'px';
           el.style.top = node.y + 'px';
         }
+        self.renderEdges();
+      }
+      // Multi-node drag
+      if (State.multiDragging) {
+        var mdx = (e.clientX - State.multiDragging.startMouseX) / State.camera.zoom;
+        var mdy = (e.clientY - State.multiDragging.startMouseY) / State.camera.zoom;
+        var starts = State.multiDragging.starts;
+        Object.keys(starts).forEach(function(nid) {
+          var mn = State.nodes[nid];
+          if (!mn) {
+            return;
+          }
+          mn.x = starts[nid].x + mdx;
+          mn.y = starts[nid].y + mdy;
+          var mel = document.getElementById('node_' + nid);
+          if (mel) {
+            mel.style.left = mn.x + 'px';
+            mel.style.top = mn.y + 'px';
+          }
+        });
         self.renderEdges();
       }
     });
@@ -1695,12 +2115,27 @@ var App = {
         wrap.style.cursor = 'default';
         panStart = null;
       }
+      if (State.marquee) {
+        self.applyMarqueeSelection();
+        State.marquee = null;
+        self.renderEdges();
+      }
       if (State.dragging) {
         var el = document.getElementById('node_' + State.dragging.id);
         if (el) {
           el.classList.remove('dragging');
         }
         State.dragging = null;
+      }
+      if (State.multiDragging) {
+        // Remove dragging class from all
+        Object.keys(State.multiDragging.starts).forEach(function(nid) {
+          var mel = document.getElementById('node_' + nid);
+          if (mel) {
+            mel.classList.remove('dragging');
+          }
+        });
+        State.multiDragging = null;
       }
       if (State.connecting) {
         State.connecting = null;
@@ -1726,11 +2161,24 @@ var App = {
         if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'TEXTAREA')) {
           return;
         }
-        if (State.selectedEdge) {
+        var multiIds = Object.keys(State.multiSelected);
+        if (multiIds.length > 0) {
+          // Delete all multi-selected nodes
+          for (var di = 0; di < multiIds.length; di++) {
+            self.deleteNode(multiIds[di]);
+          }
+          State.multiSelected = {};
+        } else if (State.selectedEdge) {
           self.deleteEdge(State.selectedEdge);
         } else if (State.selected) {
           self.deleteNode(State.selected);
         }
+      }
+      // Escape clears selection
+      if (e.key === 'Escape') {
+        self.selectNode(null);
+        self.renderEdges();
+        self.renderSidebar();
       }
     });
 
@@ -1761,6 +2209,42 @@ var App = {
         return;
       }
       e.stopPropagation();
+      // Cancel any marquee that started
+      State.marquee = null;
+
+      if (e.shiftKey) {
+        // Shift+click: toggle this node in/out of multi-selection
+        self.addToMultiSelection(node.id);
+        return;
+      }
+
+      var multiIds = Object.keys(State.multiSelected);
+      if (multiIds.length > 0 && State.multiSelected[node.id]) {
+        // Clicked a node that's already in the multi-selection → start multi-drag
+        // Record start positions for ALL selected nodes
+        var starts = {};
+        for (var si = 0; si < multiIds.length; si++) {
+          var sn = State.nodes[multiIds[si]];
+          if (sn) {
+            starts[multiIds[si]] = {x: sn.x, y: sn.y};
+          }
+        }
+        State.multiDragging = {
+          startMouseX: e.clientX,
+          startMouseY: e.clientY,
+          starts: starts
+        };
+        // Add dragging class to all
+        for (var di = 0; di < multiIds.length; di++) {
+          var del = document.getElementById('node_' + multiIds[di]);
+          if (del) {
+            del.classList.add('dragging');
+          }
+        }
+        return;
+      }
+
+      // Normal single-node select + drag
       self.selectNode(node.id);
       if (State.tab !== 'props') {
         self.switchTab('props');
@@ -2070,29 +2554,49 @@ function itemOptions() {
   });
 }
 
-function recipeOptions(machineType, upstreamItem) {
+// upstreamItems: array of item keys connected to this node (from node.upstream_items)
+// If provided, only show recipes where EVERY upstream item appears in the recipe's inputs.
+// This means: "I have iron_ore coming in AND copper_ore coming in → show recipes needing both"
+function recipeOptions(machineType, upstreamItems) {
+  // Normalize to array
+  var filterItems = [];
+  if (upstreamItems) {
+    if (Array.isArray(upstreamItems)) {
+      filterItems = upstreamItems;
+    } else if (typeof upstreamItems === 'string' && upstreamItems !== 'unknown' && upstreamItems !== 'custom') {
+      filterItems = [upstreamItems];
+    }
+  }
+  // Remove any filter items that are not meaningful
+  filterItems = filterItems.filter(function(fi) {
+    return fi && fi !== 'unknown' && fi !== 'custom' && fi !== 'power';
+  });
+
   return Object.keys(RECIPES).filter(function(k) {
     var r = RECIPES[k];
     if (machineType && r.machine !== machineType) {
       return false;
     }
-    // If we know what's coming in, only show recipes that can use it
-    if (upstreamItem && upstreamItem !== 'unknown' && upstreamItem !== 'custom') {
-      var anyMatch = false;
+    if (filterItems.length === 0) {
+      return true;
+    }
+    // Each filter item must appear in at least one recipe input
+    for (var fi = 0; fi < filterItems.length; fi++) {
+      var found = false;
       for (var ii = 0; ii < r.inputs.length; ii++) {
-        if (r.inputs[ii].item === upstreamItem) {
-          anyMatch = true;
+        if (r.inputs[ii].item === filterItems[fi]) {
+          found = true;
           break;
         }
       }
-      if (!anyMatch) {
+      if (!found) {
         return false;
       }
     }
     return true;
   }).map(function(k) {
     var r = RECIPES[k];
-    return {v: k, l: r.label + ' (' + r.inputs.map(function(i){return i.qty+'× '+itemName(i.item);}).join('+') + ' → ' + r.outputs.map(function(o){return o.qty+'× '+itemName(o.item);}).join(', ') + ')'};
+    return {v: k, l: r.label + ' (' + r.inputs.map(function(i){return i.qty+'× '+itemName(i.item);}).join(' + ') + ' → ' + r.outputs.map(function(o){return o.qty+'× '+itemName(o.item);}).join(', ') + ')'};
   });
 }
 
