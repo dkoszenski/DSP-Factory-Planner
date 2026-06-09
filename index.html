@@ -1,0 +1,1986 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DSP Factory Planner</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;
+  --bg2:#181c25;
+  --bg3:#1e2330;
+  --bg4:#252b3a;
+  --border:#2e3650;
+  --border2:#3d4a6a;
+  --text:#e2e8f0;
+  --text2:#8fa3bf;
+  --text3:#556070;
+  --accent:#3b82f6;
+  --accent2:#1d4ed8;
+  --ok:#22c55e;
+  --warn:#f59e0b;
+  --bad:#ef4444;
+  --gold:#f59e0b;
+  --teal:#14b8a6;
+  --purple:#a78bfa;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;height:100vh;overflow:hidden;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:12px;padding:8px 16px;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0;z-index:100}
+header h1{font-size:16px;font-weight:600;color:var(--text)}
+header .subtitle{font-size:12px;color:var(--text3)}
+.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px;transition:background 0.15s}
+.btn:hover{background:var(--bg4)}
+.btn.primary{background:var(--accent);border-color:var(--accent2);color:#fff}
+.btn.primary:hover{background:var(--accent2)}
+.btn.danger{background:#7f1d1d;border-color:#991b1b;color:#fca5a5}
+.btn.danger:hover{background:#991b1b}
+.main{display:flex;flex:1;overflow:hidden}
+#canvas-wrap{flex:1;position:relative;overflow:hidden;background:var(--bg)}
+#canvas{position:absolute;top:0;left:0;cursor:default}
+.grid-bg{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;background-image:radial-gradient(circle,var(--border) 1px,transparent 1px);background-size:32px 32px}
+.sidebar{width:320px;background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
+.sidebar-tabs{display:flex;border-bottom:1px solid var(--border)}
+.sidebar-tab{flex:1;padding:10px;text-align:center;cursor:pointer;font-size:12px;font-weight:500;color:var(--text2);border-bottom:2px solid transparent}
+.sidebar-tab.active{color:var(--accent);border-color:var(--accent)}
+.sidebar-body{flex:1;overflow-y:auto;padding:12px}
+.sidebar-body::-webkit-scrollbar{width:6px}
+.sidebar-body::-webkit-scrollbar-track{background:var(--bg2)}
+.sidebar-body::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.prop-group{margin-bottom:16px}
+.prop-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.prop-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.prop-row label{font-size:12px;color:var(--text2);min-width:110px;flex-shrink:0}
+.prop-row input[type=number],.prop-row input[type=text],.prop-row select{flex:1;padding:4px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:12px}
+.prop-row input[type=range]{flex:1}
+.prop-row .range-val{font-size:12px;font-weight:500;min-width:30px;text-align:right}
+.node-palette{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.palette-item{padding:8px 10px;border-radius:6px;border:1px solid var(--border2);background:var(--bg3);cursor:grab;text-align:center;transition:border-color .15s,background .15s;user-select:none}
+.palette-item:hover{border-color:var(--accent);background:var(--bg4)}
+.palette-item .pi-icon{font-size:20px;margin-bottom:4px}
+.palette-item .pi-name{font-size:11px;font-weight:500;color:var(--text2)}
+.stat-card{background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:8px}
+.stat-card .sc-title{font-size:11px;color:var(--text2);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.stat-card .sc-val{font-size:18px;font-weight:600}
+.stat-card .sc-sub{font-size:11px;color:var(--text3);margin-top:2px}
+.stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.alert-item{padding:8px 10px;border-radius:5px;font-size:12px;margin-bottom:6px;border:1px solid;display:flex;gap:8px;align-items:flex-start}
+.alert-item.ok{background:#052e16;border-color:#166534;color:#86efac}
+.alert-item.warn{background:#2d1a00;border-color:#92400e;color:#fcd34d}
+.alert-item.bad{background:#2d0505;border-color:#991b1b;color:#fca5a5}
+.alert-item .ai-icon{flex-shrink:0;font-size:14px}
+.no-select{color:var(--text3);text-align:center;padding:24px 16px;font-size:12px}
+.node-el{position:absolute;border-radius:8px;border:2px solid var(--border2);background:var(--bg3);min-width:160px;cursor:grab;user-select:none;transition:border-color .15s,box-shadow .15s}
+.node-el:hover{border-color:var(--border2)}
+.node-el.selected{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.25)}
+.node-el.dragging{cursor:grabbing;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.node-header{padding:8px 12px;border-bottom:1px solid var(--border);border-radius:6px 6px 0 0;display:flex;align-items:center;gap:6px}
+.node-header .nh-icon{font-size:16px}
+.node-header .nh-title{font-size:13px;font-weight:600;flex:1}
+.node-header .nh-type{font-size:10px;color:var(--text3);font-weight:400}
+.node-header .nh-del{opacity:0;cursor:pointer;color:var(--bad);font-size:14px;padding:2px;border-radius:3px;transition:opacity .15s}
+.node-el:hover .nh-del{opacity:1}
+.node-body{padding:8px 12px;min-width:150px}
+.node-stat{display:flex;align-items:center;justify-content:space-between;font-size:11px;margin-bottom:3px}
+.node-stat .ns-label{color:var(--text3)}
+.node-stat .ns-val{font-weight:500;font-size:12px}
+.ns-val.ok{color:var(--ok)}
+.ns-val.warn{color:var(--warn)}
+.ns-val.bad{color:var(--bad)}
+.port-row{display:flex;align-items:center;justify-content:space-between;padding:4px 0}
+.port{width:14px;height:14px;border-radius:50%;border:2px solid;cursor:crosshair;position:relative;flex-shrink:0;transition:transform .15s}
+.port:hover{transform:scale(1.4)}
+.port.input{border-color:var(--teal);background:var(--bg)}
+.port.input:hover{background:var(--teal)}
+.port.output{border-color:var(--gold);background:var(--bg)}
+.port.output:hover{background:var(--gold)}
+.port.connected{background:currentColor}
+.port-label{font-size:11px;color:var(--text2)}
+.edge-svg{position:absolute;top:0;left:0;pointer-events:none;overflow:visible}
+.edge-path{fill:none;stroke-width:2;stroke:var(--border2)}
+.edge-path.selected-edge{stroke:var(--accent)}
+.edge-path.ok-edge{stroke:var(--ok)}
+.edge-path.warn-edge{stroke:var(--warn)}
+.edge-path.bad-edge{stroke:var(--bad)}
+.edge-clickable{fill:none;stroke:transparent;stroke-width:16;cursor:pointer;pointer-events:stroke}
+.edge-label-bg{fill:var(--bg2);stroke:var(--border);stroke-width:1;rx:4}
+.edge-label-text{fill:var(--text2);font-size:10px;font-family:'Segoe UI',system-ui,sans-serif;text-anchor:middle}
+.conn-line{position:absolute;top:0;left:0;pointer-events:none}
+.context-menu{position:fixed;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;padding:4px;z-index:1000;min-width:160px;box-shadow:0 8px 24px rgba(0,0,0,.5)}
+.cm-item{padding:6px 12px;border-radius:4px;cursor:pointer;font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px}
+.cm-item:hover{background:var(--bg4)}
+.cm-item.danger{color:#fca5a5}
+.cm-sep{height:1px;background:var(--border);margin:4px 0}
+.tooltip{position:fixed;background:var(--bg);border:1px solid var(--border2);border-radius:5px;padding:6px 10px;font-size:11px;color:var(--text2);pointer-events:none;z-index:2000;max-width:200px}
+.badge{display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;font-weight:600}
+.badge.ok{background:#052e16;color:#86efac}
+.badge.warn{background:#2d1a00;color:#fcd34d}
+.badge.bad{background:#2d0505;color:#fca5a5}
+.minimap{position:absolute;bottom:16px;right:16px;width:160px;height:100px;background:rgba(15,17,23,.85);border:1px solid var(--border2);border-radius:6px;overflow:hidden;pointer-events:none}
+.minimap canvas{width:100%;height:100%}
+.zoom-controls{position:absolute;bottom:16px;left:16px;display:flex;flex-direction:column;gap:4px}
+.zoom-btn{width:32px;height:32px;border-radius:6px;background:var(--bg2);border:1px solid var(--border);color:var(--text);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:background .15s}
+.zoom-btn:hover{background:var(--bg4)}
+.zoom-label{font-size:10px;color:var(--text3);text-align:center;padding:2px}
+.drop-overlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:50}
+</style>
+</head>
+<body>
+
+<header>
+  <span style="font-size:22px">⚙️</span>
+  <div>
+    <h1>DSP Factory Planner</h1>
+    <div class="subtitle">Node-based production chain calculator</div>
+  </div>
+  <div class="header-actions">
+    <button class="btn" onclick="App.saveToFile()">💾 Save</button>
+    <button class="btn" onclick="App.loadFromFile()">📂 Load</button>
+    <button class="btn" onclick="App.resetView()">⊞ Fit view</button>
+    <button class="btn danger" onclick="App.clearAll()">🗑 Clear all</button>
+    <input type="file" id="file-input" accept=".json" style="display:none" onchange="App.onFileLoad(event)">
+  </div>
+</header>
+
+<div class="main">
+  <div id="canvas-wrap">
+    <div class="grid-bg"></div>
+    <svg id="edge-svg" class="edge-svg" style="width:100%;height:100%;position:absolute;top:0;left:0;pointer-events:none;overflow:visible"></svg>
+    <div id="canvas" style="position:absolute;top:0;left:0;width:0;height:0"></div>
+    <div id="drop-overlay" class="drop-overlay"></div>
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="App.zoom(1.2)" title="Zoom in">+</button>
+      <div class="zoom-label" id="zoom-label">100%</div>
+      <button class="zoom-btn" onclick="App.zoom(0.8)" title="Zoom out">−</button>
+    </div>
+  </div>
+
+  <div class="sidebar">
+    <div class="sidebar-tabs">
+      <div class="sidebar-tab active" id="tab-nodes" onclick="App.switchTab('nodes')">Nodes</div>
+      <div class="sidebar-tab" id="tab-props" onclick="App.switchTab('props')">Properties</div>
+      <div class="sidebar-tab" id="tab-stats" onclick="App.switchTab('stats')">Analysis</div>
+    </div>
+    <div class="sidebar-body" id="sidebar-content"></div>
+  </div>
+</div>
+
+<div id="context-menu" class="context-menu" style="display:none"></div>
+<div id="tooltip" class="tooltip" style="display:none"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────────────────────────────
+
+var ITEMS = {
+  // Ores
+  iron_ore:{name:'Iron Ore',icon:'🔴',color:'#dc2626'},
+  copper_ore:{name:'Copper Ore',icon:'🟠',color:'#ea580c'},
+  stone_ore:{name:'Stone Ore',icon:'⬜',color:'#9ca3af'},
+  coal:{name:'Coal',icon:'🪨',color:'#6b7280'},
+  silicon_ore:{name:'Silicon Ore',icon:'🔷',color:'#6366f1'},
+  titanium_ore:{name:'Titanium Ore',icon:'⚪',color:'#e2e8f0'},
+  kimberlite_ore:{name:'Kimberlite Ore',icon:'💎',color:'#7c3aed'},
+  fractal_silicon:{name:'Fractal Silicon',icon:'🔹',color:'#4f46e5'},
+  grating_crystal:{name:'Optical Grating Crystal',icon:'🔮',color:'#818cf8'},
+  spiniform_crystal:{name:'Spiniform Stalagmite Crystal',icon:'🌀',color:'#06b6d4'},
+  unipolar_magnet:{name:'Unipolar Magnet',icon:'🧲',color:'#ec4899'},
+  optical_grating_crystal:{name:'Optical Grating Crystal',icon:'🔮',color:'#818cf8'},
+  organic_crystal_raw:{name:'Organic Crystal (raw)',icon:'🌿',color:'#16a34a'},
+  // Liquids
+  crude_oil:{name:'Crude Oil',icon:'🛢',color:'#78350f'},
+  refined_oil:{name:'Refined Oil',icon:'🟡',color:'#ca8a04'},
+  water:{name:'Water',icon:'💧',color:'#38bdf8'},
+  sulfuric_acid:{name:'Sulfuric Acid',icon:'🧪',color:'#65a30d'},
+  // Smelted materials
+  iron_ingot:{name:'Iron Ingot',icon:'🔩',color:'#b45309'},
+  copper_ingot:{name:'Copper Ingot',icon:'🔶',color:'#d97706'},
+  stone_brick:{name:'Stone Brick',icon:'🧱',color:'#78716c'},
+  glass:{name:'Glass',icon:'🪟',color:'#e0f2fe'},
+  high_purity_silicon:{name:'High-Purity Silicon',icon:'💜',color:'#7c3aed'},
+  crystal_silicon:{name:'Crystal Silicon',icon:'🔵',color:'#3b82f6'},
+  steel:{name:'Steel',icon:'🪙',color:'#475569'},
+  titanium_ingot:{name:'Titanium Ingot',icon:'🤍',color:'#94a3b8'},
+  titanium_alloy:{name:'Titanium Alloy',icon:'⚙️',color:'#64748b'},
+  titanium_crystal:{name:'Titanium Crystal',icon:'🔷',color:'#0ea5e9'},
+  titanium_glass:{name:'Titanium Glass',icon:'🪟',color:'#7dd3fc'},
+  prism:{name:'Prism',icon:'🔺',color:'#f0abfc'},
+  diamond:{name:'Diamond',icon:'💎',color:'#a5f3fc'},
+  energetic_graphite:{name:'Energized Graphite',icon:'⬛',color:'#374151'},
+  magnet:{name:'Magnet',icon:'🧲',color:'#dc2626'},
+  // Gases/fluids
+  hydrogen:{name:'Hydrogen',icon:'💧',color:'#38bdf8'},
+  deuterium:{name:'Deuterium',icon:'☢️',color:'#fbbf24'},
+  antimatter:{name:'Antimatter',icon:'⚡',color:'#a855f7'},
+  critical_photon:{name:'Critical Photon',icon:'🌟',color:'#fef08a'},
+  strange_matter:{name:'Strange Matter',icon:'🌌',color:'#4f46e5'},
+  // Chemical/intermediate
+  plastic:{name:'Plastic',icon:'🟧',color:'#f97316'},
+  graphene:{name:'Graphene',icon:'🕸',color:'#4b5563'},
+  carbon_nanotube:{name:'Carbon Nanotube',icon:'🔗',color:'#374151'},
+  organic_crystal:{name:'Organic Crystal',icon:'💚',color:'#10b981'},
+  casimir_crystal:{name:'Casimir Crystal',icon:'✨',color:'#f59e0b'},
+  frame_material:{name:'Frame Material',icon:'🏗',color:'#0369a1'},
+  // Components
+  gear:{name:'Gear',icon:'⚙️',color:'#6b7280'},
+  magnetic_coil:{name:'Magnetic Coil',icon:'🌀',color:'#2563eb'},
+  circuit_board:{name:'Circuit Board',icon:'🟢',color:'#16a34a'},
+  microcrystalline:{name:'Microcrystalline Component',icon:'🔬',color:'#0d9488'},
+  processor:{name:'Processor',icon:'💻',color:'#7c3aed'},
+  quantum_chip:{name:'Quantum Chip',icon:'🔮',color:'#6d28d9'},
+  electric_motor:{name:'Electric Motor',icon:'🔌',color:'#2563eb'},
+  em_turbine:{name:'Electromagnetic Turbine',icon:'🌪',color:'#7c3aed'},
+  super_mag_ring:{name:'Super-Magnetic Ring',icon:'💍',color:'#db2777'},
+  particle_container:{name:'Particle Container',icon:'⚗️',color:'#0891b2'},
+  particle_broadband:{name:'Particle Broadband',icon:'📡',color:'#0284c7'},
+  plasma_exciter:{name:'Plasma Exciter',icon:'⚡',color:'#fbbf24'},
+  photon_combiner:{name:'Photon Combiner',icon:'🔵',color:'#0ea5e9'},
+  graviton_lens:{name:'Graviton Lens',icon:'🔭',color:'#7c3aed'},
+  plane_filter:{name:'Plane Filter',icon:'🔷',color:'#0284c7'},
+  annihilation_sphere:{name:'Annihilation Constraint Sphere',icon:'🔴',color:'#dc2626'},
+  thruster:{name:'Thruster',icon:'🚀',color:'#f97316'},
+  reinforced_thruster:{name:'Reinforced Thruster',icon:'🛸',color:'#ea580c'},
+  space_warper:{name:'Space Warper',icon:'🌀',color:'#6d28d9'},
+  proliferator_mk1:{name:'Proliferator Mk.I',icon:'🟤',color:'#92400e'},
+  proliferator_mk2:{name:'Proliferator Mk.II',icon:'🟠',color:'#c2410c'},
+  proliferator_mk3:{name:'Proliferator Mk.III',icon:'🔴',color:'#dc2626'},
+  // Fuels
+  hydrogen_fuel_rod:{name:'Hydrogen Fuel Rod',icon:'🔋',color:'#0284c7'},
+  deuteron_fuel_rod:{name:'Deuteron Fuel Rod',icon:'⚡',color:'#7c3aed'},
+  antimatter_fuel_rod:{name:'Antimatter Fuel Rod',icon:'☢️',color:'#a855f7'},
+  combustible_unit:{name:'Combustible Unit',icon:'🔥',color:'#ea580c'},
+  // Science matrices
+  em_matrix:{name:'Electromagnetic Matrix',icon:'🔵',color:'#2563eb'},
+  energy_matrix:{name:'Energy Matrix',icon:'🔴',color:'#dc2626'},
+  structure_matrix:{name:'Structure Matrix',icon:'🟡',color:'#ca8a04'},
+  information_matrix:{name:'Information Matrix',icon:'🟢',color:'#16a34a'},
+  gravity_matrix:{name:'Gravity Matrix',icon:'🟣',color:'#7c3aed'},
+  universe_matrix:{name:'Universe Matrix',icon:'⚪',color:'#e2e8f0'},
+  // Dyson sphere
+  solar_sail:{name:'Solar Sail',icon:'🌞',color:'#f59e0b'},
+  dyson_component:{name:'Dyson Sphere Component',icon:'🔮',color:'#6d28d9'},
+  // Logistics
+  logistics_drone:{name:'Logistics Drone',icon:'🚁',color:'#475569'},
+  logistics_vessel:{name:'Logistics Vessel',icon:'🛸',color:'#334155'},
+  small_carrier_rocket:{name:'Small Carrier Rocket',icon:'🚀',color:'#1d4ed8'},
+  foundation:{name:'Foundation',icon:'🧱',color:'#78716c'},
+  // Special/power
+  power_generic:{name:'Power (generic)',icon:'⚡',color:'#fbbf24'},
+  custom:{name:'Custom Item',icon:'📦',color:'#6b7280'}
+}
+
+var RECIPES = {
+  // === ARC SMELTER / PLANE SMELTER / NEGENTROPY SMELTER ===
+  iron_ingot:       {label:'Iron Ingot',inputs:[{item:'iron_ore',qty:1}],outputs:[{item:'iron_ingot',qty:1}],time:1,machine:'arc_smelter'},
+  copper_ingot:     {label:'Copper Ingot',inputs:[{item:'copper_ore',qty:1}],outputs:[{item:'copper_ingot',qty:1}],time:1,machine:'arc_smelter'},
+  stone_brick:      {label:'Stone Brick',inputs:[{item:'stone_ore',qty:1}],outputs:[{item:'stone_brick',qty:1}],time:1,machine:'arc_smelter'},
+  energetic_graphite:{label:'Energized Graphite',inputs:[{item:'coal',qty:2}],outputs:[{item:'energetic_graphite',qty:1}],time:2,machine:'arc_smelter'},
+  glass:            {label:'Glass',inputs:[{item:'stone_ore',qty:2}],outputs:[{item:'glass',qty:1}],time:2,machine:'arc_smelter'},
+  magnet:           {label:'Magnet',inputs:[{item:'iron_ore',qty:1}],outputs:[{item:'magnet',qty:1}],time:1.5,machine:'arc_smelter'},
+  steel:            {label:'Steel',inputs:[{item:'iron_ingot',qty:3}],outputs:[{item:'steel',qty:1}],time:3,machine:'arc_smelter'},
+  high_purity_silicon:{label:'High-Purity Silicon',inputs:[{item:'silicon_ore',qty:2}],outputs:[{item:'high_purity_silicon',qty:1}],time:2,machine:'arc_smelter'},
+  crystal_silicon:  {label:'Crystal Silicon',inputs:[{item:'high_purity_silicon',qty:1}],outputs:[{item:'crystal_silicon',qty:1}],time:2,machine:'arc_smelter'},
+  crystal_silicon_frac:{label:'Crystal Silicon (Fractal)',inputs:[{item:'fractal_silicon',qty:1}],outputs:[{item:'crystal_silicon',qty:2}],time:1.5,machine:'arc_smelter'},
+  diamond:          {label:'Diamond',inputs:[{item:'energetic_graphite',qty:1}],outputs:[{item:'diamond',qty:1}],time:2,machine:'arc_smelter'},
+  diamond_kimberlite:{label:'Diamond (Kimberlite)',inputs:[{item:'kimberlite_ore',qty:1}],outputs:[{item:'diamond',qty:2}],time:1.5,machine:'arc_smelter'},
+  titanium_ingot:   {label:'Titanium Ingot',inputs:[{item:'titanium_ore',qty:2}],outputs:[{item:'titanium_ingot',qty:1}],time:2,machine:'arc_smelter'},
+  titanium_alloy:   {label:'Titanium Alloy',inputs:[{item:'titanium_ingot',qty:4},{item:'steel',qty:4},{item:'sulfuric_acid',qty:8}],outputs:[{item:'titanium_alloy',qty:4}],time:12,machine:'arc_smelter'},
+  silicon_ore_from_stone:{label:'Silicon Ore (from Stone)',inputs:[{item:'stone_ore',qty:10}],outputs:[{item:'silicon_ore',qty:1}],time:10,machine:'arc_smelter'},
+  // === ASSEMBLER (all tiers) ===
+  gear:             {label:'Gear',inputs:[{item:'iron_ingot',qty:1}],outputs:[{item:'gear',qty:1}],time:1,machine:'assembler'},
+  magnetic_coil:    {label:'Magnetic Coil',inputs:[{item:'magnet',qty:2},{item:'copper_ingot',qty:1}],outputs:[{item:'magnetic_coil',qty:2}],time:1,machine:'assembler'},
+  circuit_board:    {label:'Circuit Board',inputs:[{item:'iron_ingot',qty:2},{item:'copper_ingot',qty:1}],outputs:[{item:'circuit_board',qty:2}],time:1,machine:'assembler'},
+  prism:            {label:'Prism',inputs:[{item:'glass',qty:3}],outputs:[{item:'prism',qty:2}],time:2,machine:'assembler'},
+  titanium_glass:   {label:'Titanium Glass',inputs:[{item:'glass',qty:2},{item:'titanium_ingot',qty:2},{item:'water',qty:2}],outputs:[{item:'titanium_glass',qty:2}],time:5,machine:'assembler'},
+  titanium_crystal: {label:'Titanium Crystal',inputs:[{item:'organic_crystal',qty:1},{item:'titanium_ingot',qty:3}],outputs:[{item:'titanium_crystal',qty:1}],time:4,machine:'assembler'},
+  casimir_crystal:  {label:'Casimir Crystal',inputs:[{item:'titanium_crystal',qty:1},{item:'graphene',qty:2},{item:'hydrogen',qty:12}],outputs:[{item:'casimir_crystal',qty:1}],time:4,machine:'assembler'},
+  casimir_crystal_optical:{label:'Casimir Crystal (Optical)',inputs:[{item:'optical_grating_crystal',qty:6},{item:'graphene',qty:2},{item:'hydrogen',qty:12}],outputs:[{item:'casimir_crystal',qty:1}],time:4,machine:'assembler'},
+  microcrystalline: {label:'Microcrystalline Component',inputs:[{item:'high_purity_silicon',qty:2},{item:'copper_ingot',qty:1}],outputs:[{item:'microcrystalline',qty:1}],time:2,machine:'assembler'},
+  particle_broadband:{label:'Particle Broadband',inputs:[{item:'carbon_nanotube',qty:2},{item:'crystal_silicon',qty:2},{item:'plastic',qty:1}],outputs:[{item:'particle_broadband',qty:1}],time:8,machine:'assembler'},
+  plasma_exciter:   {label:'Plasma Exciter',inputs:[{item:'magnetic_coil',qty:4},{item:'prism',qty:2}],outputs:[{item:'plasma_exciter',qty:1}],time:2,machine:'assembler'},
+  photon_combiner:  {label:'Photon Combiner',inputs:[{item:'prism',qty:2},{item:'circuit_board',qty:1}],outputs:[{item:'photon_combiner',qty:1}],time:3,machine:'assembler'},
+  photon_combiner_optical:{label:'Photon Combiner (Optical)',inputs:[{item:'optical_grating_crystal',qty:1},{item:'circuit_board',qty:1}],outputs:[{item:'photon_combiner',qty:1}],time:3,machine:'assembler'},
+  electric_motor:   {label:'Electric Motor',inputs:[{item:'iron_ingot',qty:2},{item:'gear',qty:1},{item:'magnetic_coil',qty:1}],outputs:[{item:'electric_motor',qty:1}],time:2,machine:'assembler'},
+  em_turbine:       {label:'Electromagnetic Turbine',inputs:[{item:'electric_motor',qty:2},{item:'magnetic_coil',qty:2}],outputs:[{item:'em_turbine',qty:1}],time:2,machine:'assembler'},
+  super_mag_ring:   {label:'Super-Magnetic Ring',inputs:[{item:'em_turbine',qty:2},{item:'magnet',qty:3},{item:'energetic_graphite',qty:1}],outputs:[{item:'super_mag_ring',qty:2}],time:3,machine:'assembler'},
+  processor:        {label:'Processor',inputs:[{item:'circuit_board',qty:2},{item:'microcrystalline',qty:2}],outputs:[{item:'processor',qty:1}],time:3,machine:'assembler'},
+  quantum_chip:     {label:'Quantum Chip',inputs:[{item:'processor',qty:2},{item:'plane_filter',qty:2}],outputs:[{item:'quantum_chip',qty:1}],time:6,machine:'assembler'},
+  graviton_lens:    {label:'Graviton Lens',inputs:[{item:'diamond',qty:4},{item:'strange_matter',qty:1}],outputs:[{item:'graviton_lens',qty:1}],time:6,machine:'assembler'},
+  space_warper:     {label:'Space Warper',inputs:[{item:'graviton_lens',qty:1}],outputs:[{item:'space_warper',qty:1}],time:10,machine:'assembler'},
+  space_warper_adv: {label:'Space Warper (Advanced)',inputs:[{item:'gravity_matrix',qty:1}],outputs:[{item:'space_warper',qty:8}],time:10,machine:'assembler'},
+  plane_filter:     {label:'Plane Filter',inputs:[{item:'casimir_crystal',qty:1},{item:'titanium_glass',qty:2}],outputs:[{item:'plane_filter',qty:1}],time:12,machine:'assembler'},
+  particle_container:{label:'Particle Container',inputs:[{item:'em_turbine',qty:2},{item:'copper_ingot',qty:2},{item:'graphene',qty:2}],outputs:[{item:'particle_container',qty:1}],time:4,machine:'assembler'},
+  particle_container_unipolar:{label:'Particle Container (Unipolar)',inputs:[{item:'unipolar_magnet',qty:10},{item:'copper_ingot',qty:2}],outputs:[{item:'particle_container',qty:1}],time:4,machine:'assembler'},
+  annihilation_sphere:{label:'Annihilation Constraint Sphere',inputs:[{item:'particle_container',qty:1},{item:'processor',qty:1}],outputs:[{item:'annihilation_sphere',qty:1}],time:20,machine:'assembler'},
+  thruster:         {label:'Thruster',inputs:[{item:'steel',qty:2},{item:'copper_ingot',qty:3}],outputs:[{item:'thruster',qty:1}],time:4,machine:'assembler'},
+  reinforced_thruster:{label:'Reinforced Thruster',inputs:[{item:'titanium_alloy',qty:5},{item:'em_turbine',qty:5}],outputs:[{item:'reinforced_thruster',qty:1}],time:6,machine:'assembler'},
+  logistics_drone:  {label:'Logistics Drone',inputs:[{item:'iron_ingot',qty:5},{item:'processor',qty:2},{item:'thruster',qty:2}],outputs:[{item:'logistics_drone',qty:1}],time:4,machine:'assembler'},
+  logistics_vessel: {label:'Logistics Vessel',inputs:[{item:'titanium_alloy',qty:10},{item:'processor',qty:10},{item:'reinforced_thruster',qty:2}],outputs:[{item:'logistics_vessel',qty:1}],time:6,machine:'assembler'},
+  hydrogen_fuel_rod:{label:'Hydrogen Fuel Rod',inputs:[{item:'titanium_ingot',qty:1},{item:'hydrogen',qty:10}],outputs:[{item:'hydrogen_fuel_rod',qty:2}],time:6,machine:'assembler'},
+  deuteron_fuel_rod:{label:'Deuteron Fuel Rod',inputs:[{item:'titanium_alloy',qty:1},{item:'deuterium',qty:10},{item:'super_mag_ring',qty:1}],outputs:[{item:'deuteron_fuel_rod',qty:2}],time:12,machine:'assembler'},
+  antimatter_fuel_rod:{label:'Antimatter Fuel Rod',inputs:[{item:'antimatter',qty:10},{item:'hydrogen',qty:10},{item:'annihilation_sphere',qty:1},{item:'titanium_alloy',qty:1}],outputs:[{item:'antimatter_fuel_rod',qty:2}],time:24,machine:'assembler'},
+  combustible_unit: {label:'Combustible Unit',inputs:[{item:'coal',qty:6},{item:'plastic',qty:1}],outputs:[{item:'combustible_unit',qty:1}],time:3,machine:'assembler'},
+  solar_sail:       {label:'Solar Sail',inputs:[{item:'graphene',qty:1},{item:'photon_combiner',qty:1}],outputs:[{item:'solar_sail',qty:2}],time:4,machine:'assembler'},
+  dyson_component:  {label:'Dyson Sphere Component',inputs:[{item:'frame_material',qty:3},{item:'solar_sail',qty:3},{item:'processor',qty:3}],outputs:[{item:'dyson_component',qty:1}],time:8,machine:'assembler'},
+  small_carrier_rocket:{label:'Small Carrier Rocket',inputs:[{item:'dyson_component',qty:2},{item:'quantum_chip',qty:2},{item:'deuteron_fuel_rod',qty:2}],outputs:[{item:'small_carrier_rocket',qty:1}],time:6,machine:'assembler'},
+  frame_material:   {label:'Frame Material',inputs:[{item:'carbon_nanotube',qty:4},{item:'titanium_alloy',qty:1},{item:'high_purity_silicon',qty:1}],outputs:[{item:'frame_material',qty:1}],time:6,machine:'assembler'},
+  foundation:       {label:'Foundation',inputs:[{item:'stone_brick',qty:3},{item:'steel',qty:1}],outputs:[{item:'foundation',qty:1}],time:1,machine:'assembler'},
+  proliferator_mk1: {label:'Proliferator Mk.I',inputs:[{item:'coal',qty:1}],outputs:[{item:'proliferator_mk1',qty:1}],time:0.5,machine:'assembler'},
+  proliferator_mk2: {label:'Proliferator Mk.II',inputs:[{item:'proliferator_mk1',qty:2},{item:'diamond',qty:1}],outputs:[{item:'proliferator_mk2',qty:1}],time:1,machine:'assembler'},
+  proliferator_mk3: {label:'Proliferator Mk.III',inputs:[{item:'proliferator_mk2',qty:2},{item:'carbon_nanotube',qty:1}],outputs:[{item:'proliferator_mk3',qty:1}],time:2,machine:'assembler'},
+  // === OIL REFINERY ===
+  plasma_refining:  {label:'Plasma Refining',inputs:[{item:'crude_oil',qty:2}],outputs:[{item:'refined_oil',qty:2},{item:'hydrogen',qty:1}],time:4,machine:'oil_refinery'},
+  xray_cracking:    {label:'X-Ray Cracking',inputs:[{item:'refined_oil',qty:1},{item:'hydrogen',qty:2}],outputs:[{item:'hydrogen',qty:3},{item:'energetic_graphite',qty:1}],time:4,machine:'oil_refinery'},
+  reformed_refining:{label:'Reformed Refining',inputs:[{item:'refined_oil',qty:2},{item:'hydrogen',qty:1},{item:'coal',qty:2}],outputs:[{item:'refined_oil',qty:3}],time:4,machine:'oil_refinery'},
+  // === CHEMICAL PLANT / QUANTUM CHEMICAL PLANT ===
+  plastic:          {label:'Plastic',inputs:[{item:'refined_oil',qty:2},{item:'energetic_graphite',qty:1}],outputs:[{item:'plastic',qty:1}],time:3,machine:'chemical_plant'},
+  graphene:         {label:'Graphene',inputs:[{item:'energetic_graphite',qty:3},{item:'sulfuric_acid',qty:1}],outputs:[{item:'graphene',qty:2}],time:3,machine:'chemical_plant'},
+  graphene_fire_ice:{label:'Graphene (Fire Ice)',inputs:[{item:'fire_ice',qty:2}],outputs:[{item:'graphene',qty:2},{item:'hydrogen',qty:1}],time:2,machine:'chemical_plant'},
+  carbon_nanotube:  {label:'Carbon Nanotube',inputs:[{item:'graphene',qty:3},{item:'titanium_ingot',qty:1}],outputs:[{item:'carbon_nanotube',qty:2}],time:4,machine:'chemical_plant'},
+  carbon_nanotube_spiniform:{label:'Carbon Nanotube (Spiniform)',inputs:[{item:'spiniform_crystal',qty:6}],outputs:[{item:'carbon_nanotube',qty:2}],time:4,machine:'chemical_plant'},
+  organic_crystal:  {label:'Organic Crystal',inputs:[{item:'plastic',qty:2},{item:'refined_oil',qty:1},{item:'water',qty:1}],outputs:[{item:'organic_crystal',qty:1}],time:6,machine:'chemical_plant'},
+  organic_crystal_raw:{label:'Organic Crystal (Raw ore)',inputs:[{item:'organic_crystal_raw',qty:1}],outputs:[{item:'organic_crystal',qty:1}],time:6,machine:'chemical_plant'},
+  sulfuric_acid:    {label:'Sulfuric Acid',inputs:[{item:'stone_ore',qty:6},{item:'refined_oil',qty:4},{item:'water',qty:4}],outputs:[{item:'sulfuric_acid',qty:4}],time:6,machine:'chemical_plant'},
+  // === MINIATURE PARTICLE COLLIDER ===
+  deuterium:        {label:'Deuterium',inputs:[{item:'hydrogen',qty:10}],outputs:[{item:'deuterium',qty:5}],time:2.5,machine:'particle_collider'},
+  deuterium_frac:   {label:'Deuterium (Fractionator)',inputs:[{item:'hydrogen',qty:1}],outputs:[{item:'deuterium',qty:0.01}],time:1,machine:'fractionator'},
+  antimatter:       {label:'Antimatter',inputs:[{item:'critical_photon',qty:2}],outputs:[{item:'antimatter',qty:2},{item:'hydrogen',qty:2}],time:2,machine:'particle_collider'},
+  strange_matter:   {label:'Strange Matter',inputs:[{item:'iron_ingot',qty:2},{item:'deuterium',qty:10},{item:'particle_container',qty:2}],outputs:[{item:'strange_matter',qty:1}],time:8,machine:'particle_collider'},
+  // === MATRIX LAB ===
+  em_matrix:        {label:'Electromagnetic Matrix',inputs:[{item:'magnetic_coil',qty:1},{item:'circuit_board',qty:1}],outputs:[{item:'em_matrix',qty:1}],time:3,machine:'matrix_lab'},
+  energy_matrix:    {label:'Energy Matrix',inputs:[{item:'energetic_graphite',qty:2},{item:'hydrogen',qty:2}],outputs:[{item:'energy_matrix',qty:1}],time:6,machine:'matrix_lab'},
+  structure_matrix: {label:'Structure Matrix',inputs:[{item:'diamond',qty:1},{item:'titanium_crystal',qty:1}],outputs:[{item:'structure_matrix',qty:1}],time:8,machine:'matrix_lab'},
+  information_matrix:{label:'Information Matrix',inputs:[{item:'processor',qty:2},{item:'particle_broadband',qty:1}],outputs:[{item:'information_matrix',qty:1}],time:10,machine:'matrix_lab'},
+  gravity_matrix:   {label:'Gravity Matrix',inputs:[{item:'graviton_lens',qty:1},{item:'quantum_chip',qty:1}],outputs:[{item:'gravity_matrix',qty:1}],time:24,machine:'matrix_lab'},
+  universe_matrix:  {label:'Universe Matrix',inputs:[{item:'em_matrix',qty:1},{item:'energy_matrix',qty:1},{item:'structure_matrix',qty:1},{item:'information_matrix',qty:1},{item:'gravity_matrix',qty:1},{item:'antimatter',qty:1}],outputs:[{item:'universe_matrix',qty:1}],time:15,machine:'matrix_lab'}
+}
+
+var BELT_CAPS = {mk1:360,mk2:720,mk3:1800};
+var SORTER_SPEEDS = {mk1:1.5,mk2:3,mk3:6};
+
+var NODE_DEFS = {
+  mining:{
+    label:'Mining Node',icon:'⛏️',color:'#92400e',
+    defaults:{resource:'coal',miners:[{veins:6}],vu_level:0},
+    ports:{inputs:[],outputs:[{id:'out',label:'Output',item:'resource'}]},
+    calc:function(n){
+      var vuMult=1+n.props.vu_level*0.1;
+      var total=0;
+      for(var i=0;i<n.props.miners.length;i++){
+        total+=n.props.miners[i].veins*30*vuMult;
+      }
+      n.computed={output_per_min:total,item:n.props.resource};
+      return n.computed;
+    }
+  },
+  belt:{
+    label:'Belt',icon:'➡️',color:'#1e40af',
+    defaults:{tier:'mk1'},
+    ports:{inputs:[{id:'in',label:'In',item:'any'}],outputs:[{id:'out',label:'Out',item:'any'}]},
+    calc:function(n,inflow){
+      var cap=BELT_CAPS[n.props.tier]||360;
+      var actual=Math.min(inflow||0,cap);
+      var pct=cap>0?actual/cap:0;
+      n.computed={input_per_min:inflow||0,output_per_min:actual,capacity:cap,load_pct:Math.round(pct*100),item:n.upstream_item||'unknown'};
+      return n.computed;
+    }
+  },
+  arc_smelter:{
+    label:'Arc Smelter',icon:'🔥',color:'#9a3412',
+    defaults:{count:1,recipe:'energetic_graphite',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Input',item:'recipe_input'}],outputs:[{id:'out',label:'Output',item:'recipe_output'}]},
+    calc:function(n,inflow){
+      var rec=RECIPES[n.props.recipe];
+      if(!rec){n.computed={error:'No recipe'};return n.computed;}
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach;
+      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach;
+      var inputItemQty=rec.inputs[0].qty;
+      var outputItemQty=rec.outputs[0].qty;
+      var maxRatePerMachine=outputItemQty/rec.time*60;
+      var inputNeedPerMachine=inputItemQty/rec.time*60;
+      var maxThroughputByMachines=maxRatePerMachine*cnt;
+      var inputNeedTotal=inputNeedPerMachine*cnt;
+      var inSorterTotal=inSorterCap*cnt;
+      var outSorterTotal=outSorterCap*cnt;
+      var effectiveInput=Math.min(inflow||0,inSorterTotal,inputNeedTotal);
+      var machinesFed=inputNeedPerMachine>0?effectiveInput/inputNeedPerMachine:0;
+      var rawOutput=machinesFed*(outputItemQty/inputItemQty)*(inputItemQty/rec.time*60)/(inputItemQty/rec.time*60)*maxRatePerMachine;
+      rawOutput=(effectiveInput/inputItemQty)*outputItemQty;
+      var outputAfterSorter=Math.min(rawOutput,outSorterTotal);
+      n.computed={
+        input_per_min:inflow||0,
+        effective_input:effectiveInput,
+        output_per_min:outputAfterSorter,
+        max_output:maxThroughputByMachines,
+        input_sorter_cap:inSorterTotal,
+        output_sorter_cap:outSorterTotal,
+        input_need:inputNeedTotal,
+        item_in:rec.inputs[0].item,
+        item_out:rec.outputs[0].item,
+        efficiency:maxThroughputByMachines>0?Math.round(outputAfterSorter/maxThroughputByMachines*100):0
+      };
+      return n.computed;
+    }
+  },
+  assembler:{
+    label:'Assembler',icon:'🏭',color:'#1e3a5f',
+    defaults:{count:1,recipe:'gear',tier:'mk2',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Input',item:'recipe_input'}],outputs:[{id:'out',label:'Output',item:'recipe_output'}]},
+    calc:function(n,inflow){
+      var rec=RECIPES[n.props.recipe];
+      if(!rec){n.computed={error:'No recipe'};return n.computed;}
+      var tiers={mk1:0.75,mk2:1.0,mk3:1.5};
+      var speedMult=tiers[n.props.tier]||1;
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach*cnt;
+      var effectiveTime=rec.time/speedMult;
+      var inputQty=rec.inputs[0].qty;
+      var outputQty=rec.outputs[0].qty;
+      var maxOut=outputQty/effectiveTime*60*cnt;
+      var inputNeed=inputQty/effectiveTime*60*cnt;
+      var effectiveInput=Math.min(inflow||0,inSorterCap,inputNeed);
+      var rawOut=(effectiveInput/inputQty)*outputQty;
+      var outputAfterSorter=Math.min(rawOut,outSorterCap);
+      n.computed={
+        input_per_min:inflow||0,
+        effective_input:effectiveInput,
+        output_per_min:outputAfterSorter,
+        max_output:maxOut,
+        input_sorter_cap:inSorterCap,
+        output_sorter_cap:outSorterCap,
+        input_need:inputNeed,
+        item_in:rec.inputs[0].item,
+        item_out:rec.outputs[0].item,
+        efficiency:maxOut>0?Math.round(outputAfterSorter/maxOut*100):0
+      };
+      return n.computed;
+    }
+  },
+  chemical_plant:{
+    label:'Chemical Plant',icon:'⚗️',color:'#065f46',
+    defaults:{count:1,recipe:'custom',item_in:'hydrogen',item_out:'refined_oil',recipe_time:4,input_qty:1,output_qty:1,input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Input',item:'any'}],outputs:[{id:'out',label:'Output',item:'any'}]},
+    calc:function(n,inflow){
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach*cnt;
+      var t=n.props.recipe_time||4;
+      var iq=n.props.input_qty||1;
+      var oq=n.props.output_qty||1;
+      var maxOut=oq/t*60*cnt;
+      var inputNeed=iq/t*60*cnt;
+      var effectiveInput=Math.min(inflow||0,inSorterCap,inputNeed);
+      var rawOut=(effectiveInput/iq)*oq;
+      var outputAfterSorter=Math.min(rawOut,outSorterCap);
+      n.computed={
+        input_per_min:inflow||0,
+        effective_input:effectiveInput,
+        output_per_min:outputAfterSorter,
+        max_output:maxOut,
+        input_need:inputNeed,
+        item_in:n.props.item_in,
+        item_out:n.props.item_out,
+        efficiency:maxOut>0?Math.round(outputAfterSorter/maxOut*100):0
+      };
+      return n.computed;
+    }
+  },
+  thermal_plant:{
+    label:'Thermal Power Plant',icon:'🔋',color:'#4c1d95',
+    defaults:{count:1,fuel:'energetic_graphite',input_sorter_tier:'mk1',input_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Fuel',item:'fuel'}],outputs:[{id:'out',label:'Power',item:'power'}]},
+    calc:function(n,inflow){
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var fuelRates={coal:60,energetic_graphite:24,hydrogen:18,refined_oil:25.71,fire_ice:33.75};
+      var fuelRate=fuelRates[n.props.fuel]||30;
+      var totalNeed=fuelRate*cnt;
+      var effectiveInput=Math.min(inflow||0,inSorterCap,totalNeed);
+      var plantsFed=fuelRate>0?effectiveInput/fuelRate:0;
+      var powerMW=plantsFed*2.16;
+      n.computed={
+        input_per_min:inflow||0,
+        effective_input:effectiveInput,
+        output_per_min:powerMW,
+        max_output:cnt*2.16,
+        fuel_need:totalNeed,
+        input_sorter_cap:inSorterCap,
+        plants_fed:parseFloat(plantsFed.toFixed(2)),
+        item_in:n.props.fuel,
+        item_out:'power',
+        efficiency:cnt>0?Math.round(plantsFed/cnt*100):0
+      };
+      return n.computed;
+    }
+  },
+  generic_consumer:{
+    label:'Consumer',icon:'📥',color:'#1f2937',
+    defaults:{count:1,label:'Consumer',consumption_per_min:30,item:'coal',input_sorter_tier:'mk1',input_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Input',item:'any'}],outputs:[]},
+    calc:function(n,inflow){
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var need=n.props.consumption_per_min*cnt;
+      var effective=Math.min(inflow||0,inSorterCap,need);
+      n.computed={input_per_min:inflow||0,effective_input:effective,output_per_min:0,need:need,item_in:n.props.item,efficiency:need>0?Math.round(effective/need*100):0};
+      return n.computed;
+    }
+  },
+  oil_refinery:{
+    label:'Oil Refinery',icon:'🛢',color:'#78350f',
+    defaults:{count:1,recipe:'plasma_refining',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Input',item:'any'}],outputs:[{id:'out',label:'Output',item:'any'}]},
+    calc:function(n,inflow){
+      var rec=RECIPES[n.props.recipe];
+      if(!rec){n.computed={error:'No recipe'};return n.computed;}
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach*cnt;
+      var inputQty=rec.inputs[0].qty;
+      var outputQty=rec.outputs[0].qty;
+      var maxOut=outputQty/rec.time*60*cnt;
+      var inputNeed=inputQty/rec.time*60*cnt;
+      var effectiveInput=Math.min(inflow||0,inSorterCap,inputNeed);
+      var rawOut=(effectiveInput/inputQty)*outputQty;
+      var outputAfterSorter=Math.min(rawOut,outSorterCap);
+      n.computed={
+        input_per_min:inflow||0,effective_input:effectiveInput,
+        output_per_min:outputAfterSorter,max_output:maxOut,
+        input_sorter_cap:inSorterCap,output_sorter_cap:outSorterCap,
+        input_need:inputNeed,item_in:rec.inputs[0].item,item_out:rec.outputs[0].item,
+        efficiency:maxOut>0?Math.round(outputAfterSorter/maxOut*100):0
+      };
+      return n.computed;
+    }
+  },
+  particle_collider:{
+    label:'Particle Collider',icon:'⚛️',color:'#4c1d95',
+    defaults:{count:1,recipe:'deuterium',input_sorter_tier:'mk2',input_sorter_reach:1,output_sorter_tier:'mk2',output_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Input',item:'any'}],outputs:[{id:'out',label:'Output',item:'any'}]},
+    calc:function(n,inflow){
+      var rec=RECIPES[n.props.recipe];
+      if(!rec){n.computed={error:'No recipe'};return n.computed;}
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach*cnt;
+      var inputQty=rec.inputs[0].qty;
+      var outputQty=rec.outputs[0].qty;
+      var maxOut=outputQty/rec.time*60*cnt;
+      var inputNeed=inputQty/rec.time*60*cnt;
+      var effectiveInput=Math.min(inflow||0,inSorterCap,inputNeed);
+      var rawOut=(effectiveInput/inputQty)*outputQty;
+      var outputAfterSorter=Math.min(rawOut,outSorterCap);
+      n.computed={
+        input_per_min:inflow||0,effective_input:effectiveInput,
+        output_per_min:outputAfterSorter,max_output:maxOut,
+        input_sorter_cap:inSorterCap,output_sorter_cap:outSorterCap,
+        input_need:inputNeed,item_in:rec.inputs[0].item,item_out:rec.outputs[0].item,
+        efficiency:maxOut>0?Math.round(outputAfterSorter/maxOut*100):0
+      };
+      return n.computed;
+    }
+  },
+  fractionator:{
+    label:'Fractionator',icon:'🧫',color:'#0f766e',
+    defaults:{count:1,input_sorter_tier:'mk3',input_sorter_reach:1,output_sorter_tier:'mk3',output_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Hydrogen in',item:'hydrogen'}],outputs:[{id:'out',label:'Deuterium out',item:'deuterium'}]},
+    calc:function(n,inflow){
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach*cnt;
+      var fractionRate=0.01;
+      var effectiveInput=Math.min(inflow||0,inSorterCap);
+      var rawOut=effectiveInput*fractionRate*cnt;
+      var outputAfterSorter=Math.min(rawOut,outSorterCap);
+      n.computed={
+        input_per_min:inflow||0,effective_input:effectiveInput,
+        output_per_min:outputAfterSorter,item_in:'hydrogen',item_out:'deuterium',
+        note:'1% of hydrogen becomes deuterium per pass'
+      };
+      return n.computed;
+    }
+  },
+  matrix_lab:{
+    label:'Matrix Lab',icon:'🔬',color:'#1e3a5f',
+    defaults:{count:1,recipe:'em_matrix',input_sorter_tier:'mk2',input_sorter_reach:1,output_sorter_tier:'mk2',output_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Inputs',item:'any'}],outputs:[{id:'out',label:'Matrix',item:'any'}]},
+    calc:function(n,inflow){
+      var rec=RECIPES[n.props.recipe];
+      if(!rec){n.computed={error:'No recipe'};return n.computed;}
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach*cnt;
+      var inputQty=rec.inputs[0].qty;
+      var outputQty=rec.outputs[0].qty;
+      var maxOut=outputQty/rec.time*60*cnt;
+      var inputNeed=inputQty/rec.time*60*cnt;
+      var effectiveInput=Math.min(inflow||0,inSorterCap,inputNeed);
+      var rawOut=(effectiveInput/inputQty)*outputQty;
+      var outputAfterSorter=Math.min(rawOut,outSorterCap);
+      n.computed={
+        input_per_min:inflow||0,effective_input:effectiveInput,
+        output_per_min:outputAfterSorter,max_output:maxOut,
+        input_sorter_cap:inSorterCap,output_sorter_cap:outSorterCap,
+        input_need:inputNeed,item_in:rec.inputs[0].item,item_out:rec.outputs[0].item,
+        efficiency:maxOut>0?Math.round(outputAfterSorter/maxOut*100):0
+      };
+      return n.computed;
+    }
+  },
+  mini_fusion:{
+    label:'Mini Fusion Power Plant',icon:'☢️',color:'#3730a3',
+    defaults:{count:1,input_sorter_tier:'mk2',input_sorter_reach:1},
+    ports:{inputs:[{id:'in',label:'Deuteron Rods',item:'deuteron_fuel_rod'}],outputs:[{id:'out',label:'Power',item:'power'}]},
+    calc:function(n,inflow){
+      var cnt=n.props.count||1;
+      var inSorterCap=SORTER_SPEEDS[n.props.input_sorter_tier]*60/n.props.input_sorter_reach*cnt;
+      var fuelRatePerPlant=60/22.2;
+      var totalNeed=fuelRatePerPlant*cnt;
+      var effectiveInput=Math.min(inflow||0,inSorterCap,totalNeed);
+      var plantsFed=fuelRatePerPlant>0?effectiveInput/fuelRatePerPlant:0;
+      var powerMW=plantsFed*24;
+      n.computed={
+        input_per_min:inflow||0,effective_input:effectiveInput,
+        output_per_min:powerMW,max_output:cnt*24,
+        fuel_need:totalNeed,input_sorter_cap:inSorterCap,
+        plants_fed:parseFloat(plantsFed.toFixed(2)),
+        item_in:'deuteron_fuel_rod',item_out:'power',
+        efficiency:cnt>0?Math.round(plantsFed/cnt*100):0
+      };
+      return n.computed;
+    }
+  },
+  water_pump:{
+    label:'Water Pump',icon:'💧',color:'#0369a1',
+    defaults:{count:1,vu_level:0},
+    ports:{inputs:[],outputs:[{id:'out',label:'Water',item:'water'}]},
+    calc:function(n){
+      var cnt=n.props.count||1;
+      var vuMult=1+n.props.vu_level*0.1;
+      var rate=50*vuMult*cnt;
+      n.computed={output_per_min:rate,item:'water',item_out:'water'};
+      return n.computed;
+    }
+  },
+  oil_extractor:{
+    label:'Oil Extractor',icon:'🛢',color:'#92400e',
+    defaults:{count:1,rate_per_extractor:40,vu_level:0},
+    ports:{inputs:[],outputs:[{id:'out',label:'Crude Oil',item:'crude_oil'}]},
+    calc:function(n){
+      var cnt=n.props.count||1;
+      var vuMult=1+n.props.vu_level*0.1;
+      var rate=n.props.rate_per_extractor*vuMult*cnt;
+      n.computed={output_per_min:rate,item:'crude_oil',item_out:'crude_oil'};
+      return n.computed;
+    }
+  }
+};
+
+// ─── APP STATE ────────────────────────────────────────────────────────────────
+
+var State = {
+  nodes: {},
+  edges: [],
+  selected: null,
+  selectedEdge: null,
+  tab: 'nodes',
+  camera: {x:0,y:0,zoom:1},
+  dragging: null,
+  connecting: null,
+  nextId: 1
+};
+
+// ─── APP CONTROLLER ───────────────────────────────────────────────────────────
+
+var App = {
+
+  init: function() {
+    this.bindCanvas();
+    this.renderSidebar();
+    this.scheduleRender();
+    // Welcome node
+    this.addNode('mining', {x:180, y:180});
+  },
+
+  genId: function() {
+    return 'node_' + (State.nextId++);
+  },
+
+  addNode: function(type, pos) {
+    var def = NODE_DEFS[type];
+    if (!def) {
+      return null;
+    }
+    var id = this.genId();
+    var node = {
+      id: id,
+      type: type,
+      x: pos.x,
+      y: pos.y,
+      props: JSON.parse(JSON.stringify(def.defaults)),
+      computed: {},
+      upstream_item: null
+    };
+    State.nodes[id] = node;
+    this.renderNode(node);
+    this.recalcAll();
+    this.selectNode(id);
+    return id;
+  },
+
+  deleteNode: function(id) {
+    State.edges = State.edges.filter(function(e) {
+      return e.from_node !== id && e.to_node !== id;
+    });
+    var el = document.getElementById('node_' + id);
+    if (el) {
+      el.remove();
+    }
+    delete State.nodes[id];
+    if (State.selected === id) {
+      State.selected = null;
+    }
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
+
+  addEdge: function(fromNode, fromPort, toNode, toPort) {
+    // remove existing edge to same input port
+    State.edges = State.edges.filter(function(e) {
+      return !(e.to_node === toNode && e.to_port === toPort);
+    });
+    State.edges.push({id:'edge_'+(State.nextId++),from_node:fromNode,from_port:fromPort,to_node:toNode,to_port:toPort});
+    this.recalcAll();
+    this.renderEdges();
+    // Re-render props so recipe dropdown updates to match upstream item
+    if (State.selected === toNode && State.tab === 'props') {
+      this.renderSidebar();
+    }
+  },
+
+  deleteEdge: function(edgeId) {
+    State.edges = State.edges.filter(function(e) {
+      return e.id !== edgeId;
+    });
+    State.selectedEdge = null;
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
+
+  recalcAll: function() {
+    var self = this;
+    // topological sort
+    var visited = {};
+    var order = [];
+
+    function visit(id) {
+      if (visited[id]) {
+        return;
+      }
+      visited[id] = true;
+      // visit all nodes that feed into this one
+      State.edges.forEach(function(e) {
+        if (e.to_node === id) {
+          visit(e.from_node);
+        }
+      });
+      order.push(id);
+    }
+
+    Object.keys(State.nodes).forEach(function(id) {
+      visit(id);
+    });
+
+    order.forEach(function(id) {
+      var node = State.nodes[id];
+      if (!node) {
+        return;
+      }
+      var def = NODE_DEFS[node.type];
+      if (!def) {
+        return;
+      }
+
+      // find inflow from upstream
+      var inflow = 0;
+      var upstream_item = null;
+      State.edges.forEach(function(e) {
+        if (e.to_node === id) {
+          var srcNode = State.nodes[e.from_node];
+          if (srcNode && srcNode.computed) {
+            inflow += srcNode.computed.output_per_min || 0;
+            upstream_item = srcNode.computed.item_out || srcNode.computed.item || srcNode.upstream_item || null;
+          }
+        }
+      });
+
+      node.upstream_item = upstream_item;
+
+      // Auto-fix recipe if upstream item changed and current recipe is incompatible
+      var recipeNodeTypes = ['arc_smelter','assembler','oil_refinery','particle_collider','matrix_lab'];
+      var isRecipeNode = recipeNodeTypes.indexOf(node.type) !== -1;
+      if (isRecipeNode && upstream_item && upstream_item !== 'unknown' && upstream_item !== 'custom') {
+        var machineMap = {arc_smelter:'arc_smelter',assembler:'assembler',oil_refinery:'oil_refinery',particle_collider:'particle_collider',matrix_lab:'matrix_lab'};
+        var mtype = machineMap[node.type];
+        var curRecipe = RECIPES[node.props.recipe];
+        var curValid = false;
+        if (curRecipe) {
+          for (var ci = 0; ci < curRecipe.inputs.length; ci++) {
+            if (curRecipe.inputs[ci].item === upstream_item) {
+              curValid = true;
+              break;
+            }
+          }
+        }
+        if (!curValid) {
+          // Find first valid recipe for this machine+item
+          var allKeys = Object.keys(RECIPES);
+          for (var ri = 0; ri < allKeys.length; ri++) {
+            var rk = allKeys[ri];
+            var r = RECIPES[rk];
+            if (r.machine !== mtype) {
+              continue;
+            }
+            var match = false;
+            for (var rij = 0; rij < r.inputs.length; rij++) {
+              if (r.inputs[rij].item === upstream_item) {
+                match = true;
+                break;
+              }
+            }
+            if (match) {
+              node.props.recipe = rk;
+              break;
+            }
+          }
+        }
+      }
+
+      def.calc(node, inflow);
+      self.updateNodeDisplay(node);
+    });
+  },
+
+  // ─── RENDERING ──────────────────────────────────────────────────────────────
+
+  renderNode: function(node) {
+    var def = NODE_DEFS[node.type];
+    var wrap = document.getElementById('canvas-wrap');
+    var el = document.createElement('div');
+    el.className = 'node-el';
+    el.id = 'node_' + node.id;
+    el.style.left = node.x + 'px';
+    el.style.top = node.y + 'px';
+    el.style.borderColor = def.color + '88';
+
+    el.innerHTML = this.buildNodeHTML(node);
+    document.getElementById('canvas').appendChild(el);
+    this.bindNodeEvents(el, node);
+  },
+
+  buildNodeHTML: function(node) {
+    var def = NODE_DEFS[node.type];
+    var label = node.props.label || def.label;
+    var html = '<div class="node-header" style="background:'+def.color+'22;border-color:'+def.color+'44">';
+    html += '<span class="nh-icon">'+def.icon+'</span>';
+    html += '<span class="nh-title">'+escHtml(label)+'</span>';
+    html += '<span class="nh-type">'+def.label+'</span>';
+    html += '<span class="nh-del" onclick="App.deleteNode(\''+node.id+'\')">✕</span>';
+    html += '</div>';
+    html += '<div class="node-body">';
+    // input ports
+    if (def.ports.inputs.length > 0) {
+      def.ports.inputs.forEach(function(port) {
+        html += '<div class="port-row">';
+        html += '<div class="port input" id="port_'+node.id+'_in_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="in"></div>';
+        html += '<span class="port-label">'+port.label+'</span>';
+        html += '</div>';
+      });
+    }
+    html += '<div id="node_stats_'+node.id+'"></div>';
+    // output ports
+    if (def.ports.outputs.length > 0) {
+      def.ports.outputs.forEach(function(port) {
+        html += '<div class="port-row" style="justify-content:flex-end;gap:6px">';
+        html += '<span class="port-label" style="flex:1;text-align:right;padding-right:4px">'+port.label+'</span>';
+        html += '<div class="port output" id="port_'+node.id+'_out_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="out" style="flex-shrink:0"></div>';
+        html += '</div>';
+      });
+    }
+    html += '</div>';
+    return html;
+  },
+
+  updateNodeDisplay: function(node) {
+    var el = document.getElementById('node_stats_' + node.id);
+    if (!el) {
+      return;
+    }
+    var c = node.computed;
+    if (!c) {
+      return;
+    }
+    var html = '';
+
+    if (node.type === 'mining') {
+      html += statRow('Output', fmtRate(c.output_per_min), rateClass(c.output_per_min));
+      html += statRow('Item', itemName(c.item), '');
+    } else if (node.type === 'belt') {
+      var bc = c.load_pct <= 80 ? 'ok' : c.load_pct <= 100 ? 'warn' : 'bad';
+      html += statRow('Load', c.load_pct + '%', bc);
+      html += statRow('Flow', fmtRate(c.output_per_min) + ' / ' + c.capacity + '/min', bc);
+    } else if (node.type === 'thermal_plant') {
+      var ec = (c.efficiency || 0) >= 90 ? 'ok' : (c.efficiency || 0) >= 50 ? 'warn' : 'bad';
+      html += statRow('Power', fmtNum(c.output_per_min, 2) + ' MW', ec);
+      html += statRow('Efficiency', (c.efficiency || 0) + '%', ec);
+      html += statRow('Plants fed', c.plants_fed + ' / ' + node.props.count, ec);
+    } else {
+      if (c.efficiency !== undefined) {
+        var ec2 = (c.efficiency || 0) >= 90 ? 'ok' : (c.efficiency || 0) >= 50 ? 'warn' : 'bad';
+        html += statRow('Output', fmtRate(c.output_per_min), ec2);
+        html += statRow('Efficiency', (c.efficiency || 0) + '%', ec2);
+      }
+    }
+    el.innerHTML = html;
+  },
+
+  renderEdges: function() {
+    var svg = document.getElementById('edge-svg');
+    svg.innerHTML = '';
+
+    var self = this;
+    State.edges.forEach(function(edge) {
+      var fromNode = State.nodes[edge.from_node];
+      var toNode = State.nodes[edge.to_node];
+      if (!fromNode || !toNode) {
+        return;
+      }
+
+      var fromEl = document.getElementById('port_' + edge.from_node + '_out_' + edge.from_port);
+      var toEl = document.getElementById('port_' + edge.to_node + '_in_' + edge.to_port);
+      if (!fromEl || !toEl) {
+        return;
+      }
+
+      var fromRect = fromEl.getBoundingClientRect();
+      var toRect = toEl.getBoundingClientRect();
+      var wrapRect = document.getElementById('canvas-wrap').getBoundingClientRect();
+
+      var x1 = fromRect.left + fromRect.width / 2 - wrapRect.left;
+      var y1 = fromRect.top + fromRect.height / 2 - wrapRect.top;
+      var x2 = toRect.left + toRect.width / 2 - wrapRect.left;
+      var y2 = toRect.top + toRect.height / 2 - wrapRect.top;
+
+      var dx = Math.abs(x2 - x1) * 0.6;
+      var d = 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + dx) + ' ' + y1 + ', ' + (x2 - dx) + ' ' + y2 + ', ' + x2 + ' ' + y2;
+
+      // determine edge color from computed
+      var srcNode = State.nodes[edge.from_node];
+      var edgeClass = 'edge-path';
+      if (srcNode && srcNode.computed) {
+        var c = srcNode.computed;
+        if (c.efficiency !== undefined) {
+          if (c.efficiency >= 90) {
+            edgeClass += ' ok-edge';
+          } else if (c.efficiency >= 50) {
+            edgeClass += ' warn-edge';
+          } else {
+            edgeClass += ' bad-edge';
+          }
+        } else if (srcNode.type === 'belt') {
+          if (c.load_pct <= 80) {
+            edgeClass += ' ok-edge';
+          } else if (c.load_pct <= 100) {
+            edgeClass += ' warn-edge';
+          } else {
+            edgeClass += ' bad-edge';
+          }
+        } else if (srcNode.type === 'mining') {
+          edgeClass += ' ok-edge';
+        } else {
+          edgeClass += ' ok-edge';
+        }
+      }
+
+      if (State.selectedEdge === edge.id) {
+        edgeClass += ' selected-edge';
+      }
+
+      var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+      var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('class', edgeClass);
+
+      var clickPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      clickPath.setAttribute('d', d);
+      clickPath.setAttribute('class', 'edge-clickable');
+      clickPath.style.pointerEvents = 'stroke';
+      var eid = edge.id;
+      clickPath.addEventListener('click', function(ev) {
+        ev.stopPropagation();
+        State.selectedEdge = eid;
+        self.renderEdges();
+      });
+      clickPath.addEventListener('contextmenu', function(ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        self.showContextMenu(ev, [{label:'🗑 Delete connection',danger:true,action:function(){self.deleteEdge(eid);}}]);
+      });
+
+      // flow label at midpoint
+      var mx = (x1 + x2) / 2;
+      var my = (y1 + y2) / 2;
+      var flowVal = '';
+      if (srcNode && srcNode.computed) {
+        var outVal = srcNode.computed.output_per_min;
+        if (outVal !== undefined) {
+          flowVal = fmtRate(outVal);
+          var itemKey = srcNode.computed.item_out || srcNode.computed.item;
+          if (itemKey && itemKey !== 'power') {
+            flowVal += '/min';
+          } else if (itemKey === 'power') {
+            flowVal = fmtNum(outVal, 2) + ' MW';
+          }
+        }
+      }
+
+      if (flowVal) {
+        var labelW = flowVal.length * 6 + 12;
+        var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+        rect.setAttribute('x', mx - labelW / 2);
+        rect.setAttribute('y', my - 9);
+        rect.setAttribute('width', labelW);
+        rect.setAttribute('height', 16);
+        rect.setAttribute('rx', '3');
+        rect.setAttribute('class', 'edge-label-bg');
+        var txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', mx);
+        txt.setAttribute('y', my + 2);
+        txt.setAttribute('class', 'edge-label-text');
+        txt.textContent = flowVal;
+        g.appendChild(rect);
+        g.appendChild(txt);
+      }
+
+      g.appendChild(path);
+      g.appendChild(clickPath);
+      svg.appendChild(g);
+    });
+
+    // draw in-progress connection line
+    if (State.connecting) {
+      var fc = State.connecting;
+      var path2 = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      var dx2 = Math.abs(fc.cx - fc.x1) * 0.6;
+      var dd = 'M ' + fc.x1 + ' ' + fc.y1 + ' C ' + (fc.x1 + dx2) + ' ' + fc.y1 + ', ' + (fc.cx - dx2) + ' ' + fc.cy + ', ' + fc.cx + ' ' + fc.cy;
+      path2.setAttribute('d', dd);
+      path2.setAttribute('stroke', '#60a5fa');
+      path2.setAttribute('stroke-width', '2');
+      path2.setAttribute('stroke-dasharray', '6 3');
+      path2.setAttribute('fill', 'none');
+      svg.appendChild(path2);
+    }
+  },
+
+  // ─── SIDEBAR ────────────────────────────────────────────────────────────────
+
+  switchTab: function(tab) {
+    State.tab = tab;
+    document.getElementById('tab-nodes').className = 'sidebar-tab' + (tab === 'nodes' ? ' active' : '');
+    document.getElementById('tab-props').className = 'sidebar-tab' + (tab === 'props' ? ' active' : '');
+    document.getElementById('tab-stats').className = 'sidebar-tab' + (tab === 'stats' ? ' active' : '');
+    this.renderSidebar();
+  },
+
+  renderSidebar: function() {
+    var el = document.getElementById('sidebar-content');
+    if (State.tab === 'nodes') {
+      el.innerHTML = this.buildPaletteHTML();
+    } else if (State.tab === 'props') {
+      el.innerHTML = this.buildPropsHTML();
+    } else if (State.tab === 'stats') {
+      el.innerHTML = this.buildStatsHTML();
+    }
+    this.bindSidebarEvents();
+  },
+
+  buildPaletteHTML: function() {
+    var html = '<div class="prop-label">Drag to canvas or click to add</div>';
+    html += '<div class="node-palette">';
+    var types = Object.keys(NODE_DEFS);
+    for (var i = 0; i < types.length; i++) {
+      var t = types[i];
+      var def = NODE_DEFS[t];
+      html += '<div class="palette-item" draggable="true" data-type="'+t+'" onclick="App.addNode(this.dataset.type,App.getAddPos())">';
+      html += '<div class="pi-icon">'+def.icon+'</div>';
+      html += '<div class="pi-name">'+def.label+'</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+    html += '<div style="margin-top:16px"><div class="prop-label">Tips</div>';
+    html += '<div style="font-size:11px;color:var(--text3);line-height:1.6">';
+    html += '• Drag node to move<br>';
+    html += '• Click output port (gold), drag to input port (teal) to connect<br>';
+    html += '• Right-click node or edge for options<br>';
+    html += '• Click edge to select, then delete key<br>';
+    html += '• Scroll to zoom, middle-click drag to pan<br>';
+    html += '</div></div>';
+    return html;
+  },
+
+  buildPropsHTML: function() {
+    if (!State.selected) {
+      return '<div class="no-select">Select a node to edit its properties</div>';
+    }
+    var node = State.nodes[State.selected];
+    if (!node) {
+      return '<div class="no-select">Node not found</div>';
+    }
+    return this.buildNodePropsHTML(node);
+  },
+
+  buildNodePropsHTML: function(node) {
+    var def = NODE_DEFS[node.type];
+    var html = '<div class="prop-label">'+def.icon+' '+def.label+'</div>';
+
+    if (node.type === 'mining') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propSelect(node, 'resource', 'Resource', itemOptions());
+      html += this.propRange(node, 'vu_level', 'VU Level', 0, 20, 1);
+      html += '<div class="prop-label" style="margin-top:12px">Miners</div>';
+      for (var i = 0; i < node.props.miners.length; i++) {
+        var idx = i;
+        html += '<div class="prop-group" style="border:1px solid var(--border);border-radius:5px;padding:8px;margin-bottom:6px">';
+        html += '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Miner '+(i+1)+'</div>';
+        html += '<div class="prop-row"><label>Veins covered</label><input type="number" min="1" max="12" value="'+node.props.miners[i].veins+'" onchange="App.updateMinerVein(\''+node.id+'\','+idx+',this.value)"></div>';
+        if (node.props.miners.length > 1) {
+          html += '<div style="text-align:right"><span style="font-size:11px;color:var(--bad);cursor:pointer" onclick="App.removeMiner(\''+node.id+'\','+idx+')">✕ Remove</span></div>';
+        }
+        html += '</div>';
+      }
+      html += '<button class="btn" style="width:100%;margin-top:4px" onclick="App.addMiner(\''+node.id+'\')">+ Add miner</button>';
+    } else if (node.type === 'belt') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propSelect(node, 'tier', 'Belt tier', [{v:'mk1',l:'Mk.I (360/min)'},{v:'mk2',l:'Mk.II (720/min)'},{v:'mk3',l:'Mk.III (1800/min)'}]);
+    } else if (node.type === 'arc_smelter' || node.type === 'assembler') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      if (node.type === 'assembler') {
+        html += this.propSelect(node, 'tier', 'Assembler tier', [{v:'mk1',l:'Mk.I (×0.75)'},{v:'mk2',l:'Mk.II (×1.0)'},{v:'mk3',l:'Mk.III (×1.5)'}]);
+      }
+      if (node.upstream_item && node.upstream_item !== 'unknown' && node.upstream_item !== 'custom') {
+        var filteredCount = recipeOptions(node.type === 'arc_smelter' ? 'arc_smelter' : 'assembler', node.upstream_item).length;
+        var totalCount = recipeOptions(node.type === 'arc_smelter' ? 'arc_smelter' : 'assembler').length;
+        if (filteredCount < totalCount) {
+          html += '<div style="font-size:11px;color:var(--teal);margin-bottom:4px;padding:4px 8px;background:#0f2027;border-radius:4px;border:1px solid var(--teal)">🔗 Showing '+filteredCount+' of '+totalCount+' recipes that accept <strong>'+itemName(node.upstream_item)+'</strong></div>';
+        }
+      }
+      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions(node.type === 'arc_smelter' ? 'arc_smelter' : 'assembler', node.upstream_item));
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square (full speed)'},{v:2,l:'2 squares (half speed)'},{v:3,l:'3 squares (1/3 speed)'}]);
+      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square (full speed)'},{v:2,l:'2 squares (half speed)'},{v:3,l:'3 squares (1/3 speed)'}]);
+    } else if (node.type === 'chemical_plant') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      html += this.propSelect(node, 'item_in', 'Input item', itemOptions());
+      html += this.propSelect(node, 'item_out', 'Output item', itemOptions());
+      html += this.propNum(node, 'recipe_time', 'Recipe time (sec)', 0.1, 60);
+      html += this.propNum(node, 'input_qty', 'Input qty/cycle', 1, 20);
+      html += this.propNum(node, 'output_qty', 'Output qty/cycle', 1, 20);
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'thermal_plant') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      html += this.propSelect(node, 'fuel', 'Fuel type', [
+        {v:'coal',l:'Coal (60/min)'},{v:'energetic_graphite',l:'Energized Graphite (24/min)'},
+        {v:'hydrogen',l:'Hydrogen (18/min)'},{v:'refined_oil',l:'Refined Oil (~25.7/min)'},{v:'fire_ice',l:'Fire Ice (~33.8/min)'}
+      ]);
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'generic_consumer') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      html += this.propSelect(node, 'item', 'Item consumed', itemOptions());
+      html += this.propNum(node, 'consumption_per_min', 'Consume/min (each)', 1, 10000);
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'oil_refinery') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('oil_refinery', node.upstream_item));
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'particle_collider') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('particle_collider', node.upstream_item));
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'fractionator') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter (Hydrogen in)</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+      html += '<div class="prop-label" style="margin-top:10px">Output Sorter (Deuterium out)</div>';
+      html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'matrix_lab') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      html += this.propSelect(node, 'recipe', 'Recipe', recipeOptions('matrix_lab', node.upstream_item));
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'mini_fusion') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 200);
+      html += '<div class="prop-label" style="margin-top:10px">Input Sorter (Deuteron Rods)</div>';
+      html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'water_pump') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 50);
+      html += this.propRange(node, 'vu_level', 'VU Level', 0, 20, 1);
+    } else if (node.type === 'oil_extractor') {
+      html += this.propText(node, 'label', 'Name');
+      html += this.propNum(node, 'count', 'Count', 1, 50);
+      html += this.propNum(node, 'rate_per_extractor', 'Rate/extractor (base /min)', 1, 200);
+      html += this.propRange(node, 'vu_level', 'VU Level', 0, 20, 1);
+    }
+
+    // computed panel
+    if (node.computed && Object.keys(node.computed).length > 0) {
+      html += '<div class="prop-label" style="margin-top:16px">Live stats</div>';
+      html += '<div class="stat-card">';
+      var c = node.computed;
+      if (c.output_per_min !== undefined && node.type !== 'thermal_plant') {
+        html += statRow2('Output', fmtRate(c.output_per_min) + '/min');
+      }
+      if (c.output_per_min !== undefined && node.type === 'thermal_plant') {
+        html += statRow2('Power output', fmtNum(c.output_per_min, 2) + ' MW');
+        html += statRow2('Max power', fmtNum(c.max_output, 2) + ' MW');
+        html += statRow2('Plants fed', c.plants_fed + ' / ' + node.props.count);
+      }
+      if (c.input_per_min !== undefined) {
+        html += statRow2('Input arriving', fmtRate(c.input_per_min) + '/min');
+      }
+      if (c.effective_input !== undefined) {
+        html += statRow2('Effective input', fmtRate(c.effective_input) + '/min');
+      }
+      if (c.input_need !== undefined) {
+        html += statRow2('Input needed', fmtRate(c.input_need) + '/min');
+      }
+      if (c.fuel_need !== undefined) {
+        html += statRow2('Fuel needed', fmtRate(c.fuel_need) + '/min');
+      }
+      if (c.input_sorter_cap !== undefined) {
+        html += statRow2('Input sorter cap', fmtRate(c.input_sorter_cap) + '/min');
+      }
+      if (c.output_sorter_cap !== undefined) {
+        html += statRow2('Output sorter cap', fmtRate(c.output_sorter_cap) + '/min');
+      }
+      if (c.max_output !== undefined && node.type !== 'thermal_plant') {
+        html += statRow2('Max possible', fmtRate(c.max_output) + '/min');
+      }
+      if (c.efficiency !== undefined) {
+        var ec = c.efficiency >= 90 ? 'ok' : c.efficiency >= 50 ? 'warn' : 'bad';
+        html += '<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><span style="font-size:11px;color:var(--text3)">Efficiency</span> <span class="badge '+ec+'">'+c.efficiency+'%</span></div>';
+      }
+      html += '</div>';
+    }
+
+    return html;
+  },
+
+  buildStatsHTML: function() {
+    var html = '';
+    var alerts = [];
+    var totalPower = 0;
+    var nodeCount = Object.keys(State.nodes).length;
+
+    Object.values(State.nodes).forEach(function(node) {
+      var c = node.computed;
+      if (!c) {
+        return;
+      }
+      var def = NODE_DEFS[node.type];
+      var label = node.props.label || def.label;
+
+      if (node.type === 'thermal_plant' || node.type === 'mini_fusion') {
+        totalPower += c.output_per_min || 0;
+      }
+
+      if (c.efficiency !== undefined) {
+        if (c.efficiency < 50) {
+          alerts.push({type:'bad',msg:label+': severely starved ('+c.efficiency+'% efficient)'});
+        } else if (c.efficiency < 90) {
+          alerts.push({type:'warn',msg:label+': partially starved ('+c.efficiency+'% efficient)'});
+        }
+      }
+
+      if (node.type === 'belt' && c.load_pct > 100) {
+        alerts.push({type:'bad',msg:label+': belt SATURATED ('+c.load_pct+'% loaded — items backing up!)'});
+      } else if (node.type === 'belt' && c.load_pct > 85) {
+        alerts.push({type:'warn',msg:label+': belt near capacity ('+c.load_pct+'%)'});
+      }
+
+      if (c.input_sorter_cap !== undefined && c.input_per_min > c.input_sorter_cap * 1.05) {
+        alerts.push({type:'bad',msg:label+': input sorter is the bottleneck ('+fmtRate(c.input_sorter_cap)+'/min cap vs '+fmtRate(c.input_per_min)+'/min arriving)'});
+      }
+
+      if (c.output_sorter_cap !== undefined && c.max_output > c.output_sorter_cap * 1.05) {
+        alerts.push({type:'warn',msg:label+': output sorter may limit throughput ('+fmtRate(c.output_sorter_cap)+'/min cap vs '+fmtRate(c.max_output)+'/min possible)'});
+      }
+    });
+
+    html += '<div class="stat-grid">';
+    html += '<div class="stat-card"><div class="sc-title">Total power</div><div class="sc-val">'+fmtNum(totalPower,2)+' MW</div></div>';
+    html += '<div class="stat-card"><div class="sc-title">Total nodes</div><div class="sc-val">'+nodeCount+'</div></div>';
+    html += '</div>';
+
+    if (alerts.length === 0) {
+      html += '<div class="alert-item ok"><span class="ai-icon">✓</span><span>All nodes are balanced and running at capacity.</span></div>';
+    } else {
+      for (var i = 0; i < alerts.length; i++) {
+        var icon = alerts[i].type === 'bad' ? '✗' : '⚠';
+        html += '<div class="alert-item '+alerts[i].type+'"><span class="ai-icon">'+icon+'</span><span>'+escHtml(alerts[i].msg)+'</span></div>';
+      }
+    }
+
+    // per-node breakdown
+    html += '<div class="prop-label" style="margin-top:16px">Node breakdown</div>';
+    Object.values(State.nodes).forEach(function(node) {
+      var c = node.computed;
+      var def = NODE_DEFS[node.type];
+      var label = node.props.label || def.label;
+      var eff = c.efficiency !== undefined ? c.efficiency : null;
+      var effClass = eff !== null ? (eff >= 90 ? 'ok' : eff >= 50 ? 'warn' : 'bad') : '';
+      html += '<div class="stat-card" style="cursor:pointer" onclick="App.selectNode(\''+node.id+'\');App.switchTab(\'props\')">';
+      html += '<div class="sc-title">'+def.icon+' '+escHtml(label);
+      if (eff !== null) {
+        html += ' <span class="badge '+effClass+'">'+eff+'%</span>';
+      }
+      html += '</div>';
+      if (c.output_per_min !== undefined && node.type !== 'thermal_plant') {
+        html += '<div class="sc-val" style="font-size:14px">'+fmtRate(c.output_per_min)+'/min</div>';
+      } else if (node.type === 'thermal_plant') {
+        html += '<div class="sc-val" style="font-size:14px">'+fmtNum(c.output_per_min,2)+' MW</div>';
+      }
+      html += '</div>';
+    });
+
+    return html;
+  },
+
+  // ─── PROP HELPERS ───────────────────────────────────────────────────────────
+
+  propText: function(node, key, label) {
+    var val = node.props[key] || '';
+    return '<div class="prop-row"><label>'+label+'</label><input type="text" value="'+escHtml(String(val))+'" onchange="App.setProp(\''+node.id+'\',\''+key+'\',this.value)"></div>';
+  },
+
+  propNum: function(node, key, label, min, max) {
+    var val = node.props[key] !== undefined ? node.props[key] : 1;
+    return '<div class="prop-row"><label>'+label+'</label><input type="number" min="'+min+'" max="'+max+'" value="'+val+'" onchange="App.setProp(\''+node.id+'\',\''+key+'\',+this.value)"></div>';
+  },
+
+  propRange: function(node, key, label, min, max, step) {
+    var val = node.props[key] !== undefined ? node.props[key] : 0;
+    return '<div class="prop-row"><label>'+label+'</label><input type="range" min="'+min+'" max="'+max+'" step="'+(step||1)+'" value="'+val+'" oninput="App.setProp(\''+node.id+'\',\''+key+'\',+this.value);this.nextSibling.textContent=this.value"><span class="range-val">'+val+'</span></div>';
+  },
+
+  propSelect: function(node, key, label, options) {
+    var val = node.props[key];
+    var html = '<div class="prop-row"><label>'+label+'</label><select onchange="App.setProp(\''+node.id+'\',\''+key+'\',this.value)">';
+    for (var i = 0; i < options.length; i++) {
+      var opt = options[i];
+      var v = opt.v !== undefined ? opt.v : opt;
+      var l = opt.l !== undefined ? opt.l : opt;
+      var sel = String(v) === String(val) ? ' selected' : '';
+      html += '<option value="'+v+'"'+sel+'>'+l+'</option>';
+    }
+    html += '</select></div>';
+    return html;
+  },
+
+  setProp: function(nodeId, key, val) {
+    var node = State.nodes[nodeId];
+    if (!node) {
+      return;
+    }
+    node.props[key] = val;
+    this.recalcAll();
+    this.renderEdges();
+    if (State.tab === 'props') {
+      this.renderSidebar();
+    }
+    // update node header if label changed
+    var headerEl = document.querySelector('#node_' + nodeId + ' .nh-title');
+    if (headerEl && key === 'label') {
+      headerEl.textContent = val || NODE_DEFS[node.type].label;
+    }
+  },
+
+  updateMinerVein: function(nodeId, idx, val) {
+    var node = State.nodes[nodeId];
+    if (!node) {
+      return;
+    }
+    node.props.miners[idx].veins = +val;
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
+
+  addMiner: function(nodeId) {
+    var node = State.nodes[nodeId];
+    if (!node) {
+      return;
+    }
+    node.props.miners.push({veins:6});
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
+
+  removeMiner: function(nodeId, idx) {
+    var node = State.nodes[nodeId];
+    if (!node || node.props.miners.length <= 1) {
+      return;
+    }
+    node.props.miners.splice(idx, 1);
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
+
+  // ─── SELECTION ──────────────────────────────────────────────────────────────
+
+  selectNode: function(id) {
+    if (State.selected) {
+      var prev = document.getElementById('node_' + State.selected);
+      if (prev) {
+        prev.classList.remove('selected');
+      }
+    }
+    State.selected = id;
+    State.selectedEdge = null;
+    if (id) {
+      var el = document.getElementById('node_' + id);
+      if (el) {
+        el.classList.add('selected');
+      }
+    }
+    if (State.tab === 'props' || State.tab === 'stats') {
+      this.renderSidebar();
+    }
+  },
+
+  // ─── CANVAS EVENTS ──────────────────────────────────────────────────────────
+
+  bindCanvas: function() {
+    var self = this;
+    var wrap = document.getElementById('canvas-wrap');
+    var isPanning = false;
+    var panStart = null;
+
+    wrap.addEventListener('wheel', function(e) {
+      e.preventDefault();
+      var factor = e.deltaY < 0 ? 1.1 : 0.9;
+      self.zoom(factor);
+    }, {passive: false});
+
+    wrap.addEventListener('mousedown', function(e) {
+      if (e.button === 1 || (e.button === 0 && e.altKey)) {
+        isPanning = true;
+        panStart = {x: e.clientX - State.camera.x, y: e.clientY - State.camera.y};
+        wrap.style.cursor = 'grabbing';
+        e.preventDefault();
+        return;
+      }
+      if (e.target === wrap || e.target.classList.contains('grid-bg') || e.target === document.getElementById('edge-svg')) {
+        self.selectNode(null);
+        State.selectedEdge = null;
+        self.renderEdges();
+        self.renderSidebar();
+      }
+    });
+
+    wrap.addEventListener('mousemove', function(e) {
+      if (isPanning && panStart) {
+        State.camera.x = e.clientX - panStart.x;
+        State.camera.y = e.clientY - panStart.y;
+        self.applyCamera();
+        self.renderEdges();
+        return;
+      }
+      if (State.connecting) {
+        var rect = wrap.getBoundingClientRect();
+        State.connecting.cx = e.clientX - rect.left;
+        State.connecting.cy = e.clientY - rect.top;
+        self.renderEdges();
+      }
+      if (State.dragging) {
+        var node = State.nodes[State.dragging.id];
+        if (!node) {
+          return;
+        }
+        var dx = (e.clientX - State.dragging.startMouseX) / State.camera.zoom;
+        var dy = (e.clientY - State.dragging.startMouseY) / State.camera.zoom;
+        node.x = State.dragging.startNodeX + dx;
+        node.y = State.dragging.startNodeY + dy;
+        var el = document.getElementById('node_' + node.id);
+        if (el) {
+          el.style.left = node.x + 'px';
+          el.style.top = node.y + 'px';
+        }
+        self.renderEdges();
+      }
+    });
+
+    wrap.addEventListener('mouseup', function(e) {
+      if (isPanning) {
+        isPanning = false;
+        wrap.style.cursor = 'default';
+        panStart = null;
+      }
+      if (State.dragging) {
+        var el = document.getElementById('node_' + State.dragging.id);
+        if (el) {
+          el.classList.remove('dragging');
+        }
+        State.dragging = null;
+      }
+      if (State.connecting) {
+        State.connecting = null;
+        self.renderEdges();
+      }
+    });
+
+    wrap.addEventListener('contextmenu', function(e) {
+      if (e.target === wrap || e.target.classList.contains('grid-bg')) {
+        e.preventDefault();
+        var rect = wrap.getBoundingClientRect();
+        var cx = (e.clientX - rect.left - State.camera.x) / State.camera.zoom;
+        var cy = (e.clientY - rect.top - State.camera.y) / State.camera.zoom;
+        var items = Object.keys(NODE_DEFS).map(function(t) {
+          return {label: NODE_DEFS[t].icon+' Add '+NODE_DEFS[t].label, action: (function(tt, px, py){return function(){self.addNode(tt, {x:px, y:py});}})(t, cx, cy)};
+        });
+        self.showContextMenu(e, items);
+      }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT' || document.activeElement.tagName === 'TEXTAREA')) {
+          return;
+        }
+        if (State.selectedEdge) {
+          self.deleteEdge(State.selectedEdge);
+        } else if (State.selected) {
+          self.deleteNode(State.selected);
+        }
+      }
+    });
+
+    // drag from palette
+    wrap.addEventListener('dragover', function(e) {
+      e.preventDefault();
+    });
+    wrap.addEventListener('drop', function(e) {
+      e.preventDefault();
+      var type = e.dataTransfer.getData('node-type');
+      if (type) {
+        var rect = wrap.getBoundingClientRect();
+        var x = (e.clientX - rect.left - State.camera.x) / State.camera.zoom;
+        var y = (e.clientY - rect.top - State.camera.y) / State.camera.zoom;
+        self.addNode(type, {x: x, y: y});
+      }
+    });
+  },
+
+  bindNodeEvents: function(el, node) {
+    var self = this;
+
+    el.addEventListener('mousedown', function(e) {
+      if (e.target.classList.contains('port') || e.target.classList.contains('nh-del')) {
+        return;
+      }
+      if (e.button !== 0) {
+        return;
+      }
+      e.stopPropagation();
+      self.selectNode(node.id);
+      if (State.tab !== 'props') {
+        self.switchTab('props');
+      } else {
+        self.renderSidebar();
+      }
+      State.dragging = {
+        id: node.id,
+        startMouseX: e.clientX,
+        startMouseY: e.clientY,
+        startNodeX: node.x,
+        startNodeY: node.y
+      };
+      el.classList.add('dragging');
+    });
+
+    el.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      self.showContextMenu(e, [
+        {label:'✏️ Edit properties', action: function(){self.selectNode(node.id);self.switchTab('props');}},
+        {label:'🗑 Delete node', danger: true, action: function(){self.deleteNode(node.id);}}
+      ]);
+    });
+
+    // port events
+    var ports = el.querySelectorAll('.port');
+    ports.forEach(function(portEl) {
+      portEl.addEventListener('mousedown', function(e) {
+        e.stopPropagation();
+        var dir = portEl.dataset.dir;
+        var wrap = document.getElementById('canvas-wrap');
+        var wrapRect = wrap.getBoundingClientRect();
+        var pRect = portEl.getBoundingClientRect();
+        var x = pRect.left + pRect.width / 2 - wrapRect.left;
+        var y = pRect.top + pRect.height / 2 - wrapRect.top;
+
+        if (dir === 'out') {
+          State.connecting = {
+            from_node: portEl.dataset.node,
+            from_port: portEl.dataset.port,
+            x1: x, y1: y, cx: x, cy: y
+          };
+        }
+        e.preventDefault();
+      });
+
+      portEl.addEventListener('mouseup', function(e) {
+        if (State.connecting && portEl.dataset.dir === 'in') {
+          var fromN = State.connecting.from_node;
+          var fromP = State.connecting.from_port;
+          var toN = portEl.dataset.node;
+          var toP = portEl.dataset.port;
+          if (fromN !== toN) {
+            self.addEdge(fromN, fromP, toN, toP);
+          }
+          State.connecting = null;
+          self.renderEdges();
+        }
+        e.stopPropagation();
+      });
+    });
+  },
+
+  bindSidebarEvents: function() {
+    var items = document.querySelectorAll('.palette-item[draggable]');
+    items.forEach(function(item) {
+      item.addEventListener('dragstart', function(e) {
+        e.dataTransfer.setData('node-type', item.dataset.type);
+      });
+    });
+  },
+
+  // ─── CAMERA ─────────────────────────────────────────────────────────────────
+
+  zoom: function(factor) {
+    State.camera.zoom = Math.max(0.2, Math.min(3, State.camera.zoom * factor));
+    this.applyCamera();
+    this.renderEdges();
+    document.getElementById('zoom-label').textContent = Math.round(State.camera.zoom * 100) + '%';
+  },
+
+  applyCamera: function() {
+    var canvas = document.getElementById('canvas');
+    canvas.style.transform = 'translate(' + State.camera.x + 'px,' + State.camera.y + 'px) scale(' + State.camera.zoom + ')';
+    canvas.style.transformOrigin = '0 0';
+  },
+
+  getAddPos: function() {
+    var wrap = document.getElementById('canvas-wrap');
+    var rect = wrap.getBoundingClientRect();
+    var cx = rect.width / 2;
+    var cy = rect.height / 2;
+    var x = (cx - State.camera.x) / State.camera.zoom + (Math.random() * 60 - 30);
+    var y = (cy - State.camera.y) / State.camera.zoom + (Math.random() * 60 - 30);
+    return {x: x, y: y};
+  },
+
+  resetView: function() {
+    if (Object.keys(State.nodes).length === 0) {
+      State.camera = {x: 0, y: 0, zoom: 1};
+      this.applyCamera();
+      return;
+    }
+    var xs = [];
+    var ys = [];
+    Object.values(State.nodes).forEach(function(n) {
+      xs.push(n.x);
+      ys.push(n.y);
+    });
+    var minX = Math.min.apply(null, xs) - 80;
+    var minY = Math.min.apply(null, ys) - 80;
+    var maxX = Math.max.apply(null, xs) + 240;
+    var maxY = Math.max.apply(null, ys) + 200;
+    var wrap = document.getElementById('canvas-wrap');
+    var ww = wrap.clientWidth;
+    var wh = wrap.clientHeight;
+    var scaleX = ww / (maxX - minX);
+    var scaleY = wh / (maxY - minY);
+    var zoom = Math.min(scaleX, scaleY, 1.5);
+    zoom = Math.max(0.2, zoom);
+    State.camera.zoom = zoom;
+    State.camera.x = (ww - (maxX + minX) * zoom) / 2;
+    State.camera.y = (wh - (maxY + minY) * zoom) / 2;
+    this.applyCamera();
+    this.renderEdges();
+    document.getElementById('zoom-label').textContent = Math.round(zoom * 100) + '%';
+  },
+
+  // ─── CONTEXT MENU ───────────────────────────────────────────────────────────
+
+  showContextMenu: function(e, items) {
+    var menu = document.getElementById('context-menu');
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var item = items[i];
+      if (item.sep) {
+        html += '<div class="cm-sep"></div>';
+      } else {
+        html += '<div class="cm-item'+(item.danger?' danger':'')+'" data-idx="'+i+'">'+item.label+'</div>';
+      }
+    }
+    menu.innerHTML = html;
+    menu.style.display = 'block';
+    // keep menu inside viewport
+    var menuW = 180;
+    var menuH = items.length * 32;
+    var left = e.clientX;
+    var top = e.clientY;
+    if (left + menuW > window.innerWidth) {
+      left = window.innerWidth - menuW - 8;
+    }
+    if (top + menuH > window.innerHeight) {
+      top = window.innerHeight - menuH - 8;
+    }
+    menu.style.left = left + 'px';
+    menu.style.top = top + 'px';
+
+    var actions = items;
+    // Use mousedown on items — fires before the document mousedown close handler
+    menu.querySelectorAll('.cm-item').forEach(function(itemEl) {
+      itemEl.addEventListener('mousedown', function(ev) {
+        ev.stopPropagation();
+        ev.preventDefault();
+        var idx = +itemEl.dataset.idx;
+        menu.style.display = 'none';
+        if (actions[idx] && actions[idx].action) {
+          actions[idx].action();
+        }
+      });
+    });
+
+    var closeMenu = function(ev) {
+      // Don't close if clicking inside the menu
+      if (menu.contains(ev.target)) {
+        return;
+      }
+      menu.style.display = 'none';
+      document.removeEventListener('mousedown', closeMenu);
+    };
+    setTimeout(function() {
+      document.addEventListener('mousedown', closeMenu);
+    }, 0);
+  },
+
+  // ─── RENDER LOOP ────────────────────────────────────────────────────────────
+
+  scheduleRender: function() {
+    var self = this;
+    setInterval(function() {
+      self.renderEdges();
+      if (State.tab === 'stats') {
+        self.renderSidebar();
+      }
+    }, 100);
+  },
+
+  // ─── SAVE / LOAD ────────────────────────────────────────────────────────────
+
+  saveToFile: function() {
+    var data = {nodes: State.nodes, edges: State.edges, nextId: State.nextId};
+    var blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'dsp-factory.json';
+    a.click();
+  },
+
+  loadFromFile: function() {
+    document.getElementById('file-input').click();
+  },
+
+  onFileLoad: function(e) {
+    var self = this;
+    var file = e.target.files[0];
+    if (!file) {
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function(ev) {
+      try {
+        var data = JSON.parse(ev.target.result);
+        self.clearAll(true);
+        State.nodes = data.nodes || {};
+        State.edges = data.edges || [];
+        State.nextId = data.nextId || 100;
+        Object.values(State.nodes).forEach(function(node) {
+          self.renderNode(node);
+        });
+        self.recalcAll();
+        self.renderEdges();
+        self.renderSidebar();
+        self.resetView();
+      } catch (err) {
+        alert('Failed to load file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  },
+
+  clearAll: function(silent) {
+    if (!silent && !confirm('Clear all nodes and connections?')) {
+      return;
+    }
+    Object.keys(State.nodes).forEach(function(id) {
+      var el = document.getElementById('node_' + id);
+      if (el) {
+        el.remove();
+      }
+    });
+    State.nodes = {};
+    State.edges = [];
+    State.selected = null;
+    State.selectedEdge = null;
+    this.renderEdges();
+    this.renderSidebar();
+  }
+};
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+function fmtRate(v) {
+  if (v === undefined || v === null) {
+    return '—';
+  }
+  if (v >= 1000) {
+    return (Math.round(v / 10) / 100) + 'k';
+  }
+  return Math.round(v * 10) / 10 + '';
+}
+
+function fmtNum(v, dec) {
+  if (v === undefined || v === null) {
+    return '—';
+  }
+  return parseFloat(v.toFixed(dec));
+}
+
+function rateClass(v) {
+  if (!v || v === 0) {
+    return 'bad';
+  }
+  return 'ok';
+}
+
+function statRow(label, val, cls) {
+  var c = cls || '';
+  return '<div class="node-stat"><span class="ns-label">'+label+'</span><span class="ns-val '+c+'">'+val+'</span></div>';
+}
+
+function statRow2(label, val) {
+  return '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:var(--text3)">'+escHtml(label)+'</span><span style="font-weight:500">'+escHtml(String(val))+'</span></div>';
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function itemName(key) {
+  return (ITEMS[key] && ITEMS[key].name) || key || '—';
+}
+
+function itemOptions() {
+  return Object.keys(ITEMS).map(function(k) {
+    return {v: k, l: ITEMS[k].icon + ' ' + ITEMS[k].name};
+  });
+}
+
+function recipeOptions(machineType, upstreamItem) {
+  return Object.keys(RECIPES).filter(function(k) {
+    var r = RECIPES[k];
+    if (machineType && r.machine !== machineType) {
+      return false;
+    }
+    // If we know what's coming in, only show recipes that can use it
+    if (upstreamItem && upstreamItem !== 'unknown' && upstreamItem !== 'custom') {
+      var anyMatch = false;
+      for (var ii = 0; ii < r.inputs.length; ii++) {
+        if (r.inputs[ii].item === upstreamItem) {
+          anyMatch = true;
+          break;
+        }
+      }
+      if (!anyMatch) {
+        return false;
+      }
+    }
+    return true;
+  }).map(function(k) {
+    var r = RECIPES[k];
+    return {v: k, l: r.label + ' (' + r.inputs.map(function(i){return i.qty+'× '+itemName(i.item);}).join('+') + ' → ' + r.outputs.map(function(o){return o.qty+'× '+itemName(o.item);}).join(', ') + ')'};
+  });
+}
+
+function sorterOptions() {
+  return [
+    {v:'mk1',l:'Mk.I (1.5 trips/s)'},
+    {v:'mk2',l:'Mk.II (3 trips/s)'},
+    {v:'mk3',l:'Mk.III (6 trips/s)'}
+  ];
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+App.init();
+</script>
+</body>
+</html>
