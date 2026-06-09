@@ -927,25 +927,107 @@ var App = {
     var html = '';
 
     if (node.type === 'mining') {
-      html += statRow('Output', fmtRate(c.output_per_min), rateClass(c.output_per_min));
-      html += statRow('Item', itemName(c.item), '');
+      var idef = ITEMS[c.item] || null;
+      var icolor = idef ? idef.color : '#888';
+      var iicon = idef ? idef.icon : '📦';
+      // Item chip
+      html += '<div style="display:flex;align-items:center;gap:5px;margin:4px 0 2px;padding:4px 7px;background:'+icolor+'22;border:1px solid '+icolor+'55;border-radius:6px">';
+      html += '<span style="font-size:13px">'+iicon+'</span>';
+      html += '<span style="font-size:11px;font-weight:500;color:'+icolor+'">'+itemName(c.item)+'</span>';
+      html += '<span style="margin-left:auto;font-size:11px;font-weight:600;color:'+icolor+'">'+fmtRate(c.output_per_min)+'/min</span>';
+      html += '</div>';
     } else if (node.type === 'belt') {
-      var bc = c.load_pct <= 80 ? 'ok' : c.load_pct <= 100 ? 'warn' : 'bad';
-      html += statRow('Load', c.load_pct + '%', bc);
-      html += statRow('Flow', fmtRate(c.output_per_min) + ' / ' + c.capacity + '/min', bc);
-    } else if (node.type === 'thermal_plant') {
-      var ec = (c.efficiency || 0) >= 90 ? 'ok' : (c.efficiency || 0) >= 50 ? 'warn' : 'bad';
-      html += statRow('Power', fmtNum(c.output_per_min, 2) + ' MW', ec);
-      html += statRow('Efficiency', (c.efficiency || 0) + '%', ec);
-      html += statRow('Plants fed', c.plants_fed + ' / ' + node.props.count, ec);
+      var bitem = c.item || c.upstream_item || node.upstream_item;
+      var bidef = (bitem && ITEMS[bitem]) ? ITEMS[bitem] : null;
+      var bcolor = bidef ? bidef.color : '#3d4a6a';
+      var bicon = bidef ? bidef.icon : '➡️';
+      var bpct = c.load_pct || 0;
+      var bclass = bpct <= 80 ? '#22c55e' : bpct <= 100 ? '#f59e0b' : '#ef4444';
+      // Item chip
+      if (bidef) {
+        html += '<div style="display:flex;align-items:center;gap:5px;margin:3px 0 2px;padding:3px 7px;background:'+bcolor+'22;border:1px solid '+bcolor+'55;border-radius:6px">';
+        html += '<span style="font-size:12px">'+bicon+'</span>';
+        html += '<span style="font-size:10px;color:'+bcolor+'">'+bidef.name+'</span>';
+        html += '</div>';
+      }
+      // Load bar
+      html += '<div style="margin:3px 0;font-size:10px;color:var(--text3)">Load</div>';
+      html += '<div style="background:#1e2330;border-radius:3px;height:8px;overflow:hidden;margin-bottom:3px">';
+      var fillPct = Math.min(bpct, 100);
+      html += '<div style="height:100%;width:'+fillPct+'%;background:'+bclass+';border-radius:3px;transition:width .3s"></div>';
+      html += '</div>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:10px">';
+      html += '<span style="color:'+bclass+'">'+bpct+'%</span>';
+      html += '<span style="color:var(--text3)">'+fmtRate(c.output_per_min)+' / '+c.capacity+'/min</span>';
+      html += '</div>';
+    } else if (node.type === 'thermal_plant' || node.type === 'mini_fusion') {
+      var ec = (c.efficiency || 0) >= 90 ? '#22c55e' : (c.efficiency || 0) >= 50 ? '#f59e0b' : '#ef4444';
+      var fuelItem = ITEMS[c.item_in] || null;
+      if (fuelItem) {
+        html += '<div style="display:flex;align-items:center;gap:4px;margin:3px 0;padding:3px 7px;background:'+fuelItem.color+'22;border:1px solid '+fuelItem.color+'44;border-radius:6px;font-size:10px">';
+        html += '<span>'+fuelItem.icon+'</span><span style="color:'+fuelItem.color+'">'+fuelItem.name+'</span>';
+        html += '<span style="margin-left:auto;color:var(--text3)">→ ⚡</span>';
+        html += '</div>';
+      }
+      html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:3px">';
+      html += '<span style="color:var(--text3)">Power</span><span style="font-weight:500;color:'+ec+'">'+fmtNum(c.output_per_min,2)+' MW</span>';
+      html += '</div>';
+      // Efficiency bar
+      html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden;margin:4px 0">';
+      html += '<div style="height:100%;width:'+Math.min(c.efficiency||0,100)+'%;background:'+ec+';border-radius:3px"></div>';
+      html += '</div>';
+    } else if (node.type === 'water_pump' || node.type === 'oil_extractor') {
+      var witem = c.item_out || c.item;
+      var widef = (witem && ITEMS[witem]) ? ITEMS[witem] : null;
+      var wcolor = widef ? widef.color : '#38bdf8';
+      var wicon = widef ? widef.icon : '💧';
+      html += '<div style="display:flex;align-items:center;gap:5px;margin:4px 0 2px;padding:4px 7px;background:'+wcolor+'22;border:1px solid '+wcolor+'55;border-radius:6px">';
+      html += '<span style="font-size:13px">'+wicon+'</span>';
+      html += '<span style="font-size:11px;font-weight:500;color:'+wcolor+'">'+(widef ? widef.name : witem)+'</span>';
+      html += '<span style="margin-left:auto;font-size:11px;font-weight:600;color:'+wcolor+'">'+fmtRate(c.output_per_min)+'/min</span>';
+      html += '</div>';
     } else {
+      // Production nodes: arc_smelter, assembler, chemical_plant, oil_refinery, particle_collider, matrix_lab
+      if (c.item_in !== undefined || c.item_out !== undefined) {
+        var inDef = (c.item_in && ITEMS[c.item_in]) ? ITEMS[c.item_in] : null;
+        var outDef = (c.item_out && ITEMS[c.item_out]) ? ITEMS[c.item_out] : null;
+        var inColor = inDef ? inDef.color : '#6b7280';
+        var outColor = outDef ? outDef.color : '#6b7280';
+        // Input → Output flow row
+        html += '<div style="display:flex;align-items:center;gap:4px;margin:4px 0 3px;font-size:11px">';
+        if (inDef) {
+          html += '<span style="padding:2px 6px;background:'+inColor+'22;border:1px solid '+inColor+'44;border-radius:4px;color:'+inColor+'">'+inDef.icon+' '+inDef.name+'</span>';
+        }
+        html += '<span style="color:var(--text3);flex-shrink:0">→</span>';
+        if (outDef) {
+          html += '<span style="padding:2px 6px;background:'+outColor+'22;border:1px solid '+outColor+'44;border-radius:4px;color:'+outColor+'">'+outDef.icon+' '+outDef.name+'</span>';
+        }
+        html += '</div>';
+      }
       if (c.efficiency !== undefined) {
-        var ec2 = (c.efficiency || 0) >= 90 ? 'ok' : (c.efficiency || 0) >= 50 ? 'warn' : 'bad';
-        html += statRow('Output', fmtRate(c.output_per_min), ec2);
-        html += statRow('Efficiency', (c.efficiency || 0) + '%', ec2);
+        var eff = c.efficiency || 0;
+        var ec3 = eff >= 90 ? '#22c55e' : eff >= 50 ? '#f59e0b' : '#ef4444';
+        html += '<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:2px">';
+        html += '<span style="color:var(--text3)">'+fmtRate(c.output_per_min)+'/min</span>';
+        html += '<span style="color:'+ec3+'">'+eff+'%</span>';
+        html += '</div>';
+        html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden;margin-top:3px">';
+        html += '<div style="height:100%;width:'+Math.min(eff,100)+'%;background:'+ec3+';border-radius:3px"></div>';
+        html += '</div>';
       }
     }
     el.innerHTML = html;
+    // Update node left-border accent to output item color
+    var nodeEl = document.getElementById('node_' + node.id);
+    if (nodeEl) {
+      var outItemKey = c.item_out || c.item || null;
+      var outItemDef = (outItemKey && ITEMS[outItemKey]) ? ITEMS[outItemKey] : null;
+      if (outItemDef) {
+        nodeEl.style.borderColor = outItemDef.color + 'bb';
+        nodeEl.style.borderLeftWidth = '3px';
+        nodeEl.style.borderLeftColor = outItemDef.color;
+      }
+    }
   },
 
   renderEdges: function() {
@@ -978,46 +1060,71 @@ var App = {
       var dx = Math.abs(x2 - x1) * 0.6;
       var d = 'M ' + x1 + ' ' + y1 + ' C ' + (x1 + dx) + ' ' + y1 + ', ' + (x2 - dx) + ' ' + y2 + ', ' + x2 + ' ' + y2;
 
-      // determine edge color from computed
       var srcNode = State.nodes[edge.from_node];
-      var edgeClass = 'edge-path';
+
+      // Resolve item key carried on this edge
+      var edgeItemKey = null;
       if (srcNode && srcNode.computed) {
-        var c = srcNode.computed;
-        if (c.efficiency !== undefined) {
-          if (c.efficiency >= 90) {
-            edgeClass += ' ok-edge';
-          } else if (c.efficiency >= 50) {
-            edgeClass += ' warn-edge';
-          } else {
-            edgeClass += ' bad-edge';
-          }
-        } else if (srcNode.type === 'belt') {
-          if (c.load_pct <= 80) {
-            edgeClass += ' ok-edge';
-          } else if (c.load_pct <= 100) {
-            edgeClass += ' warn-edge';
-          } else {
-            edgeClass += ' bad-edge';
-          }
-        } else if (srcNode.type === 'mining') {
-          edgeClass += ' ok-edge';
-        } else {
-          edgeClass += ' ok-edge';
+        edgeItemKey = srcNode.computed.item_out || srcNode.computed.item || null;
+      }
+      var itemDef = (edgeItemKey && ITEMS[edgeItemKey]) ? ITEMS[edgeItemKey] : null;
+
+      // Base stroke color: item color if known, else neutral
+      var baseColor = itemDef ? itemDef.color : '#3d4a6a';
+
+      // Health tint: overlay a desaturated warning/error tint at low efficiency
+      var health = 100;
+      if (srcNode && srcNode.computed) {
+        var sc = srcNode.computed;
+        if (sc.efficiency !== undefined) {
+          health = sc.efficiency;
+        } else if (srcNode.type === 'belt' && sc.load_pct !== undefined) {
+          health = sc.load_pct <= 100 ? 100 : 50;
+        } else if (srcNode.type === 'mining' || srcNode.type === 'water_pump' || srcNode.type === 'oil_extractor') {
+          health = 100;
         }
       }
+      var strokeColor = baseColor;
+      var strokeWidth = '2.5';
+      if (health < 50) {
+        strokeColor = '#ef4444';
+      } else if (health < 90) {
+        strokeColor = '#f59e0b';
+      }
 
-      if (State.selectedEdge === edge.id) {
-        edgeClass += ' selected-edge';
+      var isSelected = State.selectedEdge === edge.id;
+      if (isSelected) {
+        strokeColor = '#60a5fa';
+        strokeWidth = '3.5';
       }
 
       var g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+      // Glow layer behind main path (same color, wider, more transparent)
+      var glowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      glowPath.setAttribute('d', d);
+      glowPath.setAttribute('fill', 'none');
+      glowPath.setAttribute('stroke', strokeColor);
+      glowPath.setAttribute('stroke-width', isSelected ? '10' : '7');
+      glowPath.setAttribute('stroke-opacity', '0.15');
+      g.appendChild(glowPath);
+
+      // Main path
       var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       path.setAttribute('d', d);
-      path.setAttribute('class', edgeClass);
+      path.setAttribute('fill', 'none');
+      path.setAttribute('stroke', strokeColor);
+      path.setAttribute('stroke-width', strokeWidth);
+      path.setAttribute('stroke-linecap', 'round');
+      g.appendChild(path);
 
+      // Clickable hit area
       var clickPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
       clickPath.setAttribute('d', d);
-      clickPath.setAttribute('class', 'edge-clickable');
+      clickPath.setAttribute('fill', 'none');
+      clickPath.setAttribute('stroke', 'transparent');
+      clickPath.setAttribute('stroke-width', '18');
+      clickPath.style.cursor = 'pointer';
       clickPath.style.pointerEvents = 'stroke';
       var eid = edge.id;
       clickPath.addEventListener('click', function(ev) {
@@ -1030,44 +1137,62 @@ var App = {
         ev.stopPropagation();
         self.showContextMenu(ev, [{label:'🗑 Delete connection',danger:true,action:function(){self.deleteEdge(eid);}}]);
       });
+      g.appendChild(clickPath);
 
-      // flow label at midpoint
+      // Midpoint pill label: icon + item name + rate
       var mx = (x1 + x2) / 2;
       var my = (y1 + y2) / 2;
-      var flowVal = '';
+
       if (srcNode && srcNode.computed) {
         var outVal = srcNode.computed.output_per_min;
-        if (outVal !== undefined) {
-          flowVal = fmtRate(outVal);
-          var itemKey = srcNode.computed.item_out || srcNode.computed.item;
-          if (itemKey && itemKey !== 'power') {
-            flowVal += '/min';
-          } else if (itemKey === 'power') {
-            flowVal = fmtNum(outVal, 2) + ' MW';
+        var pillIcon = itemDef ? itemDef.icon : '';
+        var pillName = itemDef ? itemDef.name : (edgeItemKey || '');
+        var pillRate = '';
+
+        if (outVal !== undefined && outVal > 0) {
+          if (edgeItemKey === 'power') {
+            pillRate = fmtNum(outVal, 2) + ' MW';
+            pillIcon = '⚡';
+            pillName = 'Power';
+          } else {
+            pillRate = fmtRate(outVal) + '/min';
           }
+        }
+
+        if (pillName || pillRate) {
+          var pillText = (pillIcon ? pillIcon + ' ' : '') + (pillName ? pillName : '') + (pillRate ? '  ' + pillRate : '');
+          // Pill background
+          var pillW = pillText.length * 6.5 + 20;
+          var pillH = 20;
+          var pillX = mx - pillW / 2;
+          var pillY = my - pillH / 2;
+
+          var pillBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          pillBg.setAttribute('x', pillX);
+          pillBg.setAttribute('y', pillY);
+          pillBg.setAttribute('width', pillW);
+          pillBg.setAttribute('height', pillH);
+          pillBg.setAttribute('rx', '10');
+          pillBg.setAttribute('fill', '#0f1117');
+          pillBg.setAttribute('stroke', strokeColor);
+          pillBg.setAttribute('stroke-width', '1.5');
+          pillBg.setAttribute('fill-opacity', '0.92');
+          g.appendChild(pillBg);
+
+          // Rate in a separate smaller pill offset slightly above
+          var ratePill = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          ratePill.setAttribute('x', mx);
+          ratePill.setAttribute('y', my + 4);
+          ratePill.setAttribute('text-anchor', 'middle');
+          ratePill.setAttribute('fill', strokeColor);
+          ratePill.setAttribute('font-size', '10');
+          ratePill.setAttribute('font-family', "'Segoe UI', system-ui, sans-serif");
+          ratePill.setAttribute('font-weight', '500');
+          ratePill.textContent = pillText;
+          g.appendChild(ratePill);
         }
       }
 
-      if (flowVal) {
-        var labelW = flowVal.length * 6 + 12;
-        var rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-        rect.setAttribute('x', mx - labelW / 2);
-        rect.setAttribute('y', my - 9);
-        rect.setAttribute('width', labelW);
-        rect.setAttribute('height', 16);
-        rect.setAttribute('rx', '3');
-        rect.setAttribute('class', 'edge-label-bg');
-        var txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        txt.setAttribute('x', mx);
-        txt.setAttribute('y', my + 2);
-        txt.setAttribute('class', 'edge-label-text');
-        txt.textContent = flowVal;
-        g.appendChild(rect);
-        g.appendChild(txt);
-      }
-
-      g.appendChild(path);
-      g.appendChild(clickPath);
       svg.appendChild(g);
     });
 
