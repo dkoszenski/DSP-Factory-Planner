@@ -2362,7 +2362,7 @@ var App = {
     }
     this.recalcAll();
     this.renderEdges();
-    if (State.tab === 'props') {
+    if (State.tab === 'props' || State.tab === 'stats') {
       this.renderSidebar();
     }
     // update node header if label or count changed
@@ -2430,6 +2430,7 @@ var App = {
     if (!node) {
       return;
     }
+
     // Pan and zoom to center this node in the viewport
     var wrap = document.getElementById('canvas-wrap');
     var ww = wrap.clientWidth;
@@ -2444,20 +2445,52 @@ var App = {
     this.applyCamera();
     this.renderEdges();
     document.getElementById('zoom-label').textContent = Math.round(targetZoom * 100) + '%';
-    // Select it and show props
-    this.selectNode(id);
-    this.switchTab('props');
-    // Apply highlight animation
+
+    // Update selection state directly without triggering a sidebar re-render mid-click.
+    // The sidebar re-render is deferred to after the current event handler completes,
+    // which prevents the Analysis tab DOM from being destroyed while the click is still
+    // being processed (which caused focusNode to fire unreliably).
+    if (State.selected && State.selected !== id) {
+      var prevEl = document.getElementById('node_' + State.selected);
+      if (prevEl) {
+        prevEl.classList.remove('selected');
+      }
+    }
+    var oldMultiIds = Object.keys(State.multiSelected);
+    for (var mi = 0; mi < oldMultiIds.length; mi++) {
+      var mel = document.getElementById('node_' + oldMultiIds[mi]);
+      if (mel) {
+        mel.classList.remove('selected');
+        mel.classList.remove('multi-selected');
+      }
+    }
+    State.multiSelected = {};
+    State.selected = id;
+    State.selectedEdge = null;
+    State.tab = 'props';
+
+    // Apply the glow highlight to the node immediately — the element exists in the
+    // canvas DOM and is not affected by sidebar re-renders
     var el = document.getElementById('node_' + id);
     if (el) {
+      el.classList.add('selected');
       el.classList.remove('analysis-highlight');
-      // Force reflow so animation restarts
       void el.offsetWidth;
       el.classList.add('analysis-highlight');
       setTimeout(function() {
         el.classList.remove('analysis-highlight');
       }, 2100);
     }
+
+    // Defer sidebar rebuild to after the current click event fully completes.
+    // This avoids destroying the Analysis tab HTML mid-click.
+    var self = this;
+    setTimeout(function() {
+      document.getElementById('tab-nodes').className = 'sidebar-tab';
+      document.getElementById('tab-props').className = 'sidebar-tab active';
+      document.getElementById('tab-stats').className = 'sidebar-tab';
+      self.renderSidebar();
+    }, 0);
   },
 
   selectNode: function(id, keepMulti) {
@@ -3089,9 +3122,6 @@ var App = {
     var self = this;
     setInterval(function() {
       self.renderEdges();
-      if (State.tab === 'stats') {
-        self.renderSidebar();
-      }
     }, 100);
   },
 
