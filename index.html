@@ -2252,13 +2252,15 @@ var App = {
         break;
       }
     }
-    var inputId = 'recipe-search-' + node.id;
-    var listId = 'recipe-list-' + node.id;
-    var optJson = JSON.stringify(options.map(function(o){ return {v:String(o.v), l:o.l}; }));
+    // Include key in element IDs so multiple search fields on the same node don't collide
+    var inputId = 'recipe-search-' + node.id + '-' + key;
+    var listId  = 'recipe-list-'  + node.id + '-' + key;
+    // Store the key name inside the JSON so filterRecipeList calls setProp with the right key
+    var optJson = JSON.stringify({key: key, opts: options.map(function(o){ return {v:String(o.v), l:o.l}; })});
     var html = '<div class="prop-row" style="flex-direction:column;align-items:stretch;gap:4px">';
     html += '<label style="margin-bottom:2px">'+label+'</label>';
     html += '<div style="position:relative">';
-    html += '<input type="text" id="'+inputId+'" placeholder="Search recipes..." autocomplete="off"';
+    html += '<input type="text" id="'+inputId+'" placeholder="Search..." autocomplete="off"';
     html += ' value="'+escHtml(currentLabel)+'"';
     html += ' style="width:100%"';
     html += ' oninput="App.filterRecipeList(\''+inputId+'\',\''+listId+'\',this.value)"';
@@ -2266,7 +2268,7 @@ var App = {
     html += ' onblur="setTimeout(function(){var l=document.getElementById(\''+listId+'\');if(l)l.style.display=\'none\';},200)">';
     html += '</div>';
     html += '<div id="'+listId+'" style="display:none;position:absolute;z-index:500;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;max-height:200px;overflow-y:auto;width:272px;box-shadow:0 8px 24px rgba(0,0,0,.6)"></div>';
-    html += '<script type="application/json" id="recipe-opts-'+node.id+'">'+optJson+'<\/script>';
+    html += '<script type="application/json" id="recipe-opts-'+node.id+'-'+key+'">'+optJson+'<' + '/script>';
     html += '</div>';
     return html;
   },
@@ -2277,17 +2279,25 @@ var App = {
     if (!input || !list) {
       return;
     }
-    var nodeId = inputId.replace('recipe-search-', '');
-    var optsEl = document.getElementById('recipe-opts-' + nodeId);
+    // inputId format: 'recipe-search-{nodeId}-{key}'
+    var withoutPrefix = inputId.replace('recipe-search-', '');
+    // Split on last '-' to get nodeId and key
+    var lastDash = withoutPrefix.lastIndexOf('-');
+    var nodeId = withoutPrefix.substring(0, lastDash);
+    var propKey = withoutPrefix.substring(lastDash + 1);
+    var optsEl = document.getElementById('recipe-opts-' + nodeId + '-' + propKey);
     if (!optsEl) {
       return;
     }
-    var opts;
+    var parsed;
     try {
-      opts = JSON.parse(optsEl.textContent);
+      parsed = JSON.parse(optsEl.textContent);
     } catch(e) {
       return;
     }
+    // Support both old format (array) and new format ({key, opts})
+    var opts = Array.isArray(parsed) ? parsed : parsed.opts;
+    var storedKey = Array.isArray(parsed) ? propKey : (parsed.key || propKey);
     var q = (searchVal || '').toLowerCase();
     var filtered = opts.filter(function(o) {
       return !q || o.l.toLowerCase().indexOf(q) !== -1;
@@ -2309,7 +2319,7 @@ var App = {
             inp.value = l;
           }
           list.style.display = 'none';
-          App.setProp(nodeId, 'recipe', v);
+          App.setProp(nodeId, storedKey, v);
         });
         item.addEventListener('mouseover', function() { this.style.background = 'var(--bg4)'; });
         item.addEventListener('mouseout', function() { this.style.background = ''; });
@@ -2576,9 +2586,10 @@ var App = {
     var isPanning = false;
     var panStart = null;
 
-    // Show edge pill label on hover over the edge SVG
+    // Show edge pill label on hover — track last hovered group to avoid CSS transition reset
     var edgeSvg = document.getElementById('edge-svg');
     edgeSvg.style.pointerEvents = 'all';
+    var lastHoveredPillId = null;
     edgeSvg.addEventListener('mousemove', function(e) {
       var target = e.target;
       var g = target;
@@ -2588,22 +2599,30 @@ var App = {
         }
         g = g.parentNode;
       }
+      var hoveredId = (g && g !== edgeSvg) ? g.getAttribute('data-edge-id') : null;
+      // Only update DOM when the hovered edge changes — prevents transition restart on every mousemove
+      if (hoveredId === lastHoveredPillId) {
+        return;
+      }
+      lastHoveredPillId = hoveredId;
       var allGroups = edgeSvg.querySelectorAll('.edge-pill-group');
       allGroups.forEach(function(pg) {
-        if (State.selectedEdge && pg.getAttribute('data-edge-id') === State.selectedEdge) {
+        var eid = pg.getAttribute('data-edge-id');
+        var isSelected = State.selectedEdge && eid === State.selectedEdge;
+        var isHovered = eid === hoveredId;
+        if (isSelected || isHovered) {
           pg.classList.add('visible');
         } else {
           pg.classList.remove('visible');
         }
       });
-      if (g && g !== edgeSvg && g.classList && g.classList.contains('edge-pill-group')) {
-        g.classList.add('visible');
-      }
     });
     edgeSvg.addEventListener('mouseleave', function() {
+      lastHoveredPillId = null;
       var allGroups = edgeSvg.querySelectorAll('.edge-pill-group');
       allGroups.forEach(function(pg) {
-        if (State.selectedEdge && pg.getAttribute('data-edge-id') === State.selectedEdge) {
+        var eid = pg.getAttribute('data-edge-id');
+        if (State.selectedEdge && eid === State.selectedEdge) {
           pg.classList.add('visible');
         } else {
           pg.classList.remove('visible');
@@ -2743,13 +2762,20 @@ var App = {
     });
 
     wrap.addEventListener('contextmenu', function(e) {
-      if (e.target === wrap || e.target.classList.contains('grid-bg')) {
+      var edgeSvgEl = document.getElementById('edge-svg');
+      var isCanvasBackground = (
+        e.target === wrap ||
+        e.target.classList.contains('grid-bg') ||
+        e.target === edgeSvgEl ||
+        e.target.tagName === 'svg'
+      );
+      if (isCanvasBackground) {
         e.preventDefault();
         var rect = wrap.getBoundingClientRect();
         var cx = (e.clientX - rect.left - State.camera.x) / State.camera.zoom;
         var cy = (e.clientY - rect.top - State.camera.y) / State.camera.zoom;
         var items = Object.keys(NODE_DEFS).map(function(t) {
-          return {label: NODE_DEFS[t].icon+' Add '+NODE_DEFS[t].label, action: (function(tt, px, py){return function(){self.addNode(tt, {x:px, y:py});}})(t, cx, cy)};
+          return {label: 'Add ' + NODE_DEFS[t].label, action: (function(tt, px, py){return function(){self.addNode(tt, {x:px, y:py});}})(t, cx, cy)};
         });
         self.showContextMenu(e, items);
       }
