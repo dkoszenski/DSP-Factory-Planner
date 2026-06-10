@@ -802,6 +802,7 @@ var State = {
   edges: [],
   selected: null,
   selectedEdge: null,
+  hoveredEdge: null,     // edge id currently under the mouse cursor (for pill visibility)
   multiSelected: {},     // {id: true} for multi-selection
   marquee: null,         // {startX,startY,curX,curY} canvas-space
   multiDragging: null,   // {startMouseX,startMouseY, starts:{id:{x,y}}}
@@ -1819,6 +1820,10 @@ var App = {
       }
 
       svg.appendChild(g);
+      // Restore visible state after DOM rebuild
+      if (State.hoveredEdge === edge.id || State.selectedEdge === edge.id) {
+        g.classList.add('visible');
+      }
     });
 
     // draw marquee selection rectangle
@@ -2256,7 +2261,7 @@ var App = {
     var inputId = 'recipe-search-' + node.id + '-' + key;
     var listId  = 'recipe-list-'  + node.id + '-' + key;
     // Store the key name inside the JSON so filterRecipeList calls setProp with the right key
-    var optJson = JSON.stringify({key: key, opts: options.map(function(o){ return {v:String(o.v), l:o.l}; })});
+    var optJson = JSON.stringify({key: key, opts: options.map(function(o){ return {v:String(o.v), l:o.l, name:o.name||''}; })});
     var html = '<div class="prop-row" style="flex-direction:column;align-items:stretch;gap:4px">';
     html += '<label style="margin-bottom:2px">'+label+'</label>';
     html += '<div style="position:relative">';
@@ -2266,8 +2271,8 @@ var App = {
     html += ' oninput="App.filterRecipeList(\''+inputId+'\',\''+listId+'\',this.value)"';
     html += ' onfocus="App.filterRecipeList(\''+inputId+'\',\''+listId+'\',\'\')"';
     html += ' onblur="setTimeout(function(){var l=document.getElementById(\''+listId+'\');if(l)l.style.display=\'none\';},200)">';
+    html += '<div id="'+listId+'" style="display:none;position:absolute;top:100%;left:0;z-index:500;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;max-height:200px;overflow-y:auto;width:100%;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.6)"></div>';
     html += '</div>';
-    html += '<div id="'+listId+'" style="display:none;position:absolute;z-index:500;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;max-height:200px;overflow-y:auto;width:272px;box-shadow:0 8px 24px rgba(0,0,0,.6)"></div>';
     html += '<script type="application/json" id="recipe-opts-'+node.id+'-'+key+'">'+optJson+'<' + '/script>';
     html += '</div>';
     return html;
@@ -2298,9 +2303,11 @@ var App = {
     // Support both old format (array) and new format ({key, opts})
     var opts = Array.isArray(parsed) ? parsed : parsed.opts;
     var storedKey = Array.isArray(parsed) ? propKey : (parsed.key || propKey);
-    var q = (searchVal || '').toLowerCase();
+    var q = (searchVal || '').toLowerCase().trim();
     var filtered = opts.filter(function(o) {
-      return !q || o.l.toLowerCase().indexOf(q) !== -1;
+      // Search on the recipe name only (not the ingredient list shown in the full label)
+      var searchTarget = (o.name || o.l.split('(')[0]).toLowerCase().trim();
+      return !q || searchTarget.indexOf(q) !== -1;
     });
     if (filtered.length === 0) {
       list.style.display = 'none';
@@ -2586,10 +2593,9 @@ var App = {
     var isPanning = false;
     var panStart = null;
 
-    // Show edge pill label on hover — track last hovered group to avoid CSS transition reset
+    // Show edge pill label on hover — write to State.hoveredEdge so renderEdges can restore it
     var edgeSvg = document.getElementById('edge-svg');
     edgeSvg.style.pointerEvents = 'all';
-    var lastHoveredPillId = null;
     edgeSvg.addEventListener('mousemove', function(e) {
       var target = e.target;
       var g = target;
@@ -2600,17 +2606,16 @@ var App = {
         g = g.parentNode;
       }
       var hoveredId = (g && g !== edgeSvg) ? g.getAttribute('data-edge-id') : null;
-      // Only update DOM when the hovered edge changes — prevents transition restart on every mousemove
-      if (hoveredId === lastHoveredPillId) {
+      if (hoveredId === State.hoveredEdge) {
         return;
       }
-      lastHoveredPillId = hoveredId;
+      State.hoveredEdge = hoveredId;
+      // Update pill visibility in the live DOM (renderEdges will re-apply on next rebuild)
       var allGroups = edgeSvg.querySelectorAll('.edge-pill-group');
       allGroups.forEach(function(pg) {
         var eid = pg.getAttribute('data-edge-id');
-        var isSelected = State.selectedEdge && eid === State.selectedEdge;
-        var isHovered = eid === hoveredId;
-        if (isSelected || isHovered) {
+        var show = (State.selectedEdge && eid === State.selectedEdge) || eid === hoveredId;
+        if (show) {
           pg.classList.add('visible');
         } else {
           pg.classList.remove('visible');
@@ -2618,7 +2623,7 @@ var App = {
       });
     });
     edgeSvg.addEventListener('mouseleave', function() {
-      lastHoveredPillId = null;
+      State.hoveredEdge = null;
       var allGroups = edgeSvg.querySelectorAll('.edge-pill-group');
       allGroups.forEach(function(pg) {
         var eid = pg.getAttribute('data-edge-id');
@@ -3244,7 +3249,13 @@ function recipeOptions(machineType, upstreamItems) {
     return true;
   }).map(function(k) {
     var r = RECIPES[k];
-    return {v: k, l: r.label + ' (' + r.inputs.map(function(i){return i.qty+'× '+itemName(i.item);}).join(' + ') + ' → ' + r.outputs.map(function(o){return o.qty+'× '+itemName(o.item);}).join(', ') + ')'};
+    // 'name' is the bare recipe label used for search matching
+    // 'l' is the full display string shown in the dropdown
+    return {
+      v: k,
+      name: r.label,
+      l: r.label + ' (' + r.inputs.map(function(i){return i.qty+'x '+itemName(i.item);}).join(' + ') + ' → ' + r.outputs.map(function(o){return o.qty+'x '+itemName(o.item);}).join(', ') + ')'
+    };
   });
 }
 
