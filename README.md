@@ -1,6 +1,6 @@
 # DSP Factory Planner
 
-A node-based, visual production chain calculator for **Dyson Sphere Program**. Plan, balance, and debug your entire factory from raw ore to finished product — including every belt, sorter, smelter, assembler, and power plant — all in your browser with no install required.
+A node-based, visual production chain calculator for **Dyson Sphere Program**. Plan, balance, and debug your entire factory from raw ore to finished product, covering every belt, sorter, smelter, assembler, and power plant, all in your browser with no install required.
 
 **Live App: [https://dkoszenski.github.io/DSP-Factory-Planner/](https://dkoszenski.github.io/DSP-Factory-Planner/)**
 
@@ -8,7 +8,7 @@ A node-based, visual production chain calculator for **Dyson Sphere Program**. P
 
 ## What is this?
 
-Dyson Sphere Program is a factory-building game where efficient production chains are everything. Keeping track of how many miners feed how many smelters, whether your belt is saturated, which recipe a machine can actually run given what's arriving — all of this is hard to reason about on paper or in a spreadsheet.
+Dyson Sphere Program is a factory-building game where efficient production chains are everything. Keeping track of how many miners feed how many smelters, whether your belt is saturated, which recipe a machine can actually run given what's arriving... all of this is hard to reason about on paper or in a spreadsheet.
 
 This planner gives you a **live, visual graph** of your production chain. Each building in your factory becomes a **node**. Nodes are connected by drawing lines between their output and input ports. Every connection carries a specific item, and the planner calculates in real time:
 
@@ -43,7 +43,7 @@ The main workspace where your factory graph lives. Nodes are positioned freely a
 
 - Dot grid background for spatial reference
 - Curved Bezier connections color-coded by the item they carry and health status
-- Midpoint pills on every connection showing item name and flow rate — visible on hover
+- Midpoint pills on every connection showing item name and flow rate, visible on hover
 - Zoom controls in the bottom-left corner (+ / - buttons or scroll wheel, zooms toward cursor)
 - Right-click empty canvas to open a context menu with all addable node types
 
@@ -54,8 +54,8 @@ Three tabs:
 | Tab | Purpose |
 |-----|---------|
 | **Nodes** | Palette of all available node types. Click any to add it at the center of the current view. |
-| **Properties** | Edit every setting for the selected node — count, recipe, sorter tiers, sorter reach, VU level, fuel type, etc. Shows a live stats panel at the bottom. |
-| **Analysis** | Global summary: warnings, bottlenecks, and a per-node breakdown. Click any entry to pan to that node and highlight it. |
+| **Properties** | Edit every setting for the selected node: count, recipe, sorter tiers, sorter reach, VU level, fuel type, etc. Shows a live stats panel at the bottom. |
+| **Analysis** | Global summary of warnings, bottlenecks, and a per-node breakdown. Click any entry to pan to that node and highlight it. |
 
 ### Header Bar
 
@@ -70,15 +70,15 @@ Three tabs:
 
 ## Node Types
 
-There are **14 node types**, each representing a category of building in Dyson Sphere Program. All nodes start with no recipe or resource selected — a blank slate. This lets the connection system and recipe filtering work together without conflict.
+There are **14 node types**, each representing a category of building in Dyson Sphere Program. All nodes start with no recipe or resource selected, a blank slate. This lets the connection system and recipe filtering work together without conflict.
 
 ### Mining Node
 
 Represents one or more Mining Machines on a resource patch.
 
-- **Resource** — searchable dropdown to select what is being mined
-- **Miners** — add as many miners as you have, each with its own vein count
-- **VU Level** — Veins Utilization research level (0–20). Each level adds +10% mining speed per vein.
+- **Resource:** searchable dropdown to select what is being mined
+- **Miners:** add as many miners as you have, each with its own vein count
+- **VU Level:** Veins Utilization research level (0-20). Each level adds +10% mining speed per vein.
 
 Output rate = (veins x 30 x (1 + VU_level x 0.1)) summed across all miners.
 
@@ -88,8 +88,8 @@ The count badge in the header shows how many miners are in the node at a glance.
 
 Represents Water Pump buildings on a water body.
 
-- **Count** — number of pumps
-- **VU Level** — affects pump output rate (+10% per level)
+- **Count:** number of pumps
+- **VU Level:** affects pump output rate (+10% per level)
 
 Base rate: 50 water/min per pump.
 
@@ -97,25 +97,25 @@ Base rate: 50 water/min per pump.
 
 Represents Oil Extractor buildings on a crude oil seep.
 
-- **Count** — number of extractors
-- **Rate per extractor** — base extraction rate (varies by seep, visible in-game)
-- **VU Level** — resource utilization research multiplier
+- **Count:** number of extractors
+- **Rate per extractor:** base extraction rate (varies by seep, visible in-game)
+- **VU Level:** resource utilization research multiplier
 
 ### Belt
 
 Represents a section of Conveyor Belt.
 
-- **Tier** — Mk.I (360/min), Mk.II (720/min), or Mk.III (1,800/min)
+- **Tier:** Mk.I (360/min), Mk.II (720/min), or Mk.III (1,800/min)
 
-Belts accept **multiple inputs**. Each new connection gets its own input port automatically. The belt sums all incoming flow, caps it at capacity, and shows the dominant item, load percentage, and an overflow warning if inputs exceed capacity. When multiple downstream nodes pull from the same belt, the belt's output is split proportionally based on each consumer's demand.
+Belts accept **multiple inputs**. Each new connection gets its own input port automatically. The belt sums all incoming flow, caps it at capacity, and shows the dominant item, load percentage, and an overflow warning if inputs exceed capacity. When multiple downstream nodes pull from the same belt, the output is split proportionally based on each consumer's demand.
 
 ### Arc Smelter
 
 Represents Arc Smelter, Plane Smelter, or Negentropy Smelter buildings.
 
-- **Count** — number of smelters
-- **Recipe** — searchable dropdown for any smelter recipe
-- **Input Sorter / Output Sorter** — tier (Mk.I/II/III) and reach (1–3 squares)
+- **Count:** number of smelters
+- **Recipe:** searchable dropdown for any smelter recipe
+- **Input Sorter / Output Sorter:** tier (Mk.I/II/III) and reach (1-3 squares)
 
 One input port is generated per recipe ingredient. Each port validates that the correct item is being connected before allowing the connection.
 
@@ -123,10 +123,10 @@ One input port is generated per recipe ingredient. Each port validates that the 
 
 Represents Assembling Machine buildings (Mk.I, Mk.II, or Mk.III).
 
-- **Count** — number of assemblers
-- **Tier** — Mk.I (x0.75 speed), Mk.II (x1.0 speed), Mk.III (x1.5 speed)
-- **Recipe** — searchable dropdown for any assembler recipe (91 recipes including all building recipes)
-- **Input Sorter / Output Sorter** — tier and reach
+- **Count:** number of assemblers
+- **Tier:** Mk.I (x0.75 speed), Mk.II (x1.0 speed), Mk.III (x1.5 speed)
+- **Recipe:** searchable dropdown for any assembler recipe (91 recipes including all building recipes)
+- **Input Sorter / Output Sorter:** tier and reach
 
 Same dynamic port system as the Arc Smelter.
 
@@ -134,19 +134,19 @@ Same dynamic port system as the Arc Smelter.
 
 Represents Chemical Plant buildings with a configurable custom recipe.
 
-- **Count** — number of plants
-- **Input item / Output item** — searchable dropdowns
-- **Recipe time** — seconds per cycle
-- **Input qty / Output qty** — items per cycle
-- **Input Sorter / Output Sorter** — tier and reach
+- **Count:** number of plants
+- **Input item / Output item:** searchable dropdowns
+- **Recipe time:** seconds per cycle
+- **Input qty / Output qty:** items per cycle
+- **Input Sorter / Output Sorter:** tier and reach
 
 ### Oil Refinery
 
 Represents Oil Refinery buildings.
 
-- **Count** — number of refineries
-- **Recipe** — Plasma Refining (single input), X-Ray Cracking (two inputs), or Reformed Refining (three inputs)
-- **Input Sorter / Output Sorter** — tier and reach
+- **Count:** number of refineries
+- **Recipe:** Plasma Refining (single input), X-Ray Cracking (two inputs), or Reformed Refining (three inputs)
+- **Input Sorter / Output Sorter:** tier and reach
 
 Multi-input recipes show one port per ingredient and use the bottleneck calculation model.
 
@@ -154,7 +154,7 @@ Multi-input recipes show one port per ingredient and use the bottleneck calculat
 
 Represents Fractionator buildings for Deuterium production.
 
-- **Count** — number of fractionators
+- **Count:** number of fractionators
 - Accepts Hydrogen only
 - Produces Deuterium at 1% of hydrogen throughput per pass
 
@@ -162,17 +162,17 @@ Represents Fractionator buildings for Deuterium production.
 
 Represents Miniature Particle Collider buildings.
 
-- **Count** — number of colliders
-- **Recipe** — Deuterium (single input), Antimatter (single input), or Strange Matter (three inputs)
-- **Input Sorter / Output Sorter** — tier and reach
+- **Count:** number of colliders
+- **Recipe:** Deuterium (single input), Antimatter (single input), or Strange Matter (three inputs)
+- **Input Sorter / Output Sorter:** tier and reach
 
 ### Matrix Lab
 
 Represents Matrix Lab buildings in production mode.
 
-- **Count** — number of labs
-- **Recipe** — any of the 6 science matrices
-- **Input Sorter / Output Sorter** — tier and reach
+- **Count:** number of labs
+- **Recipe:** any of the 6 science matrices
+- **Input Sorter / Output Sorter:** tier and reach
 
 All matrix recipes are multi-input. Universe Matrix takes 6 simultaneous inputs. One port is shown per ingredient and throughput is limited by the worst-supplied ingredient.
 
@@ -180,9 +180,9 @@ All matrix recipes are multi-input. Universe Matrix takes 6 simultaneous inputs.
 
 Represents Thermal Power Plant buildings.
 
-- **Count** — number of plants
-- **Fuel type** — Coal (60/min), Energized Graphite (24/min), Hydrogen (18/min), Refined Oil (~25.7/min), Fire Ice (~33.8/min)
-- **Input Sorter** — tier and reach
+- **Count:** number of plants
+- **Fuel type:** Coal (60/min), Energized Graphite (24/min), Hydrogen (18/min), Refined Oil (~25.7/min), Fire Ice (~33.8/min)
+- **Input Sorter:** tier and reach
 
 Output: 2.16 MW per fully-fed plant.
 
@@ -190,7 +190,7 @@ Output: 2.16 MW per fully-fed plant.
 
 Represents Mini Fusion Power Plant buildings.
 
-- **Count** — number of plants
+- **Count:** number of plants
 - Accepts only Deuteron Fuel Rods
 - Output: 24 MW per fully-fed plant
 
@@ -198,9 +198,9 @@ Represents Mini Fusion Power Plant buildings.
 
 A generic sink node for anything that consumes items without producing an output.
 
-- **Count** — number of buildings
-- **Item** — searchable dropdown for what is consumed
-- **Consumption per minute** — per building
+- **Count:** number of buildings
+- **Item:** searchable dropdown for what is consumed
+- **Consumption per minute:** per building
 
 ---
 
@@ -238,12 +238,12 @@ Connection lines show a midpoint label (item name and flow rate) when hovered. S
 
 When a node has items connected to its inputs, the recipe dropdown automatically filters to only show recipes that use those items.
 
-- Connect an Iron Ingot belt to an assembler — only recipes requiring Iron Ingot are shown
-- Connect both Iron Ingot and Copper Ingot belts — only recipes requiring both are shown
+- Connect an Iron Ingot belt to an assembler and only recipes requiring Iron Ingot are shown
+- Connect both Iron Ingot and Copper Ingot belts and only recipes requiring both are shown
 - A teal banner shows how many recipes are being filtered and which items are matched
 - If no recipes match all connected inputs, the filter clears and all recipes are shown with a warning
 
-The search input inside the recipe dropdown matches on recipe name only, not on the ingredient list shown in the full label.
+The search input inside the recipe dropdown matches on recipe name only, not the ingredient list shown in the full label.
 
 ---
 
@@ -262,7 +262,7 @@ Output scales by the lowest fill ratio across all inputs. The node card shows ea
 
 ### Demand-Weighted Belt Splitting
 
-When multiple downstream nodes pull from the same belt, the belt's output is divided proportionally by demand. If two assemblers each need 60/min from a 60/min gear belt, each receives 30/min — not 60/min each. This makes the calculations accurate for real factory layouts where resources are shared.
+When multiple downstream nodes pull from the same belt, the belt's output is divided proportionally by demand. If two assemblers each need 60/min from a 60/min gear belt, each receives 30/min rather than the full 60/min each. This keeps the calculations accurate for real factory layouts where resources are shared.
 
 ### Sorter Throughput
 
@@ -302,16 +302,16 @@ These caps are applied per ingredient per machine and multiplied by count.
 
 Each node displays:
 
-- **Header** — node name and a count badge (e.g. x6) showing the building count at a glance. If you rename a node, the original type name appears as a subtitle.
-- **Input ports** (teal dots, left side) — one per recipe ingredient for multi-input machines; one per connected source for belts, plus one spare
+- **Header:** node name and a count badge (e.g. x6) showing the building count at a glance. If you rename a node, the original type name appears as a subtitle.
+- **Input ports** (teal dots, left side): one per recipe ingredient for multi-input machines; one per connected source for belts, plus one spare
 - **Output port** (gold dot, right side)
-- **Stats area** — live per-ingredient supply bars, output rate, and efficiency bar
-- **Left border accent** — color-coded to the item the node is outputting
+- **Stats area:** live per-ingredient supply bars, output rate, and efficiency bar
+- **Left border accent:** color-coded to the item the node is outputting
 
 ### Connection Lines
 
 - Colored by item carried
-- Health-tinted: amber if efficiency 50–89%, red if below 50%
+- Health-tinted: amber if efficiency 50-89%, red if below 50%
 - Glow layer for visual depth
 - Thicker and blue when selected
 
@@ -321,13 +321,13 @@ Shown on hover (or always for the selected connection). Displays item name and c
 
 ### Efficiency and Load Bars
 
-- Green — healthy (0–80% load, 90–100% efficiency)
-- Amber — approaching limit or partially starved
-- Red — saturated belt or severely starved node
+- Green: healthy (0-80% load, 90-100% efficiency)
+- Amber: approaching limit or partially starved
+- Red: saturated belt or severely starved node
 
 ### Analysis Tab Highlights
 
-Clicking any warning or node entry in the Analysis tab pans the canvas to center that node, selects it, and plays a 2-second amber glow animation so it's easy to locate in a complex layout.
+Clicking any warning or node entry in the Analysis tab pans the canvas to center that node, selects it, and plays a 2-second amber glow animation so it's easy to find in a complex layout.
 
 ### Selected Node Glow
 
@@ -354,7 +354,7 @@ The currently selected node has a three-layer blue glow: a tight ring, a soft mi
 |--------|---------|
 | Move node | Left-click drag on node header or body |
 | Select node | Left-click node |
-| Edit properties | Select node, then Properties tab — or right-click, Edit properties |
+| Edit properties | Select node, then Properties tab (or right-click, Edit properties) |
 | Delete node | Click X on node header, or select + Delete, or right-click, Delete node |
 | Rename node | Select node, Properties tab, Name field |
 
@@ -461,12 +461,12 @@ The currently selected node has a three-layer blue glow: a tight ring, a soft mi
 
 | Building | Key Ingredients |
 |----------|----------------|
-| Conveyor Belt Mk.I | 2x Iron Ingot + 1x Gear — 3 belts |
-| Conveyor Belt Mk.II | 3x Belt Mk.I + 1x EM Turbine — 3 belts |
-| Conveyor Belt Mk.III | 3x Belt Mk.II + 1x Super-Mag Ring + 1x Graphene — 3 belts |
-| Sorter Mk.I | 1x Gear + 1x Circuit Board — 1 sorter |
-| Sorter Mk.II | 2x Sorter Mk.I + 1x Electric Motor — 2 sorters |
-| Sorter Mk.III | 2x Sorter Mk.II + 1x EM Turbine — 2 sorters |
+| Conveyor Belt Mk.I | 2x Iron Ingot + 1x Gear, outputs 3 belts |
+| Conveyor Belt Mk.II | 3x Belt Mk.I + 1x EM Turbine, outputs 3 belts |
+| Conveyor Belt Mk.III | 3x Belt Mk.II + 1x Super-Mag Ring + 1x Graphene, outputs 3 belts |
+| Sorter Mk.I | 1x Gear + 1x Circuit Board, outputs 1 sorter |
+| Sorter Mk.II | 2x Sorter Mk.I + 1x Electric Motor, outputs 2 sorters |
+| Sorter Mk.III | 2x Sorter Mk.II + 1x EM Turbine, outputs 2 sorters |
 | Arc Smelter | 4x Iron Ingot + 2x Stone Brick + 4x Circuit Board + 4x Magnetic Coil |
 | Assembler Mk.I | 4x Iron Ingot + 8x Gear + 4x Circuit Board |
 | Assembler Mk.II | 1x Assembler Mk.I + 4x Graphene + 1x Processor |
@@ -525,7 +525,7 @@ Your factory layout can be saved as a `.json` file and reloaded at any time.
 
 **To load:** Click **Load** in the header. Select a previously saved `.json` file. The canvas clears and the saved layout is restored, including all node positions, connections, and settings.
 
-**What is saved:**
+What gets saved:
 - All nodes (type, position, all property values, custom labels)
 - All connections (which nodes are connected and which ports)
 - The internal ID counter (ensures new nodes get unique IDs after loading)
@@ -536,7 +536,7 @@ Your factory layout can be saved as a `.json` file and reloaded at any time.
 
 ### Planning a Production Line
 
-Build your chain left to right: miners — belts — smelters — belts — assemblers — output. Connect nodes in order. The planner propagates flow calculations downstream automatically as you connect.
+Build your chain left to right: miners, belts, smelters, belts, assemblers, output. Connect nodes in order and the planner propagates flow calculations downstream automatically as you go.
 
 ### Null-Start Workflow
 
@@ -544,11 +544,11 @@ All nodes start with no recipe or resource selected. The intended workflow is:
 
 1. Place a miner and select its resource
 2. Connect it to a belt
-3. Connect the belt to a smelter — the recipe dropdown narrows to recipes that use your ore
-4. Select the recipe — input ports appear for each ingredient
-5. Continue building downstream — each connection further narrows available recipes
+3. Connect the belt to a smelter (the recipe dropdown narrows to recipes that use your ore)
+4. Select the recipe and input ports appear for each ingredient
+5. Continue building downstream, with each connection further narrowing available recipes
 
-This way, recipe filtering and connection validation work together rather than against each other.
+This way recipe filtering and connection validation work together rather than against each other.
 
 ### Checking Bottlenecks
 
@@ -556,33 +556,33 @@ Open the **Analysis tab** at any time. Warnings appear for:
 - Any node below 90% efficiency (amber)
 - Any node below 50% efficiency (red)
 - Any belt above 85% saturation (amber)
-- Any belt above 100% (red — items are being lost)
+- Any belt above 100% (red, items are being lost)
 - Any sorter capping throughput
 
 Click any warning to jump directly to that node in the canvas.
 
 ### Finding the Limiting Factor
 
-Select a production node and look at the Properties tab live stats panel. Each ingredient shows its arrival rate vs. needed rate. The one with the lowest ratio is your bottleneck — upgrade its sorter tier or reduce reach first.
+Select a production node and look at the Properties tab live stats panel. Each ingredient shows its arrival rate vs. needed rate. The one with the lowest ratio is your bottleneck. Upgrade its sorter tier or reduce reach first.
 
 ### Multi-Source Belts
 
-Connect multiple upstream nodes to the same belt. The belt sums all inputs and correctly splits its output among all downstream consumers proportionally by demand.
+Connect multiple upstream nodes to the same belt. The belt sums all inputs and splits its output among all downstream consumers proportionally by demand.
 
 ### Veins Utilization Research
 
-VU Level is one of the most impactful early techs. Updating it on your mining nodes immediately shows the output change, helping you decide how many additional smelters you can support.
+VU Level is one of the most impactful early techs. Updating it on your mining nodes immediately shows the output change, which helps you figure out how many additional smelters you can support.
 
 ---
 
 ## Technical Notes
 
-- **Single file** — the entire application is one `.html` file with no external dependencies, no framework, and no build step
-- **Vanilla JavaScript** — no React, no Vue, no jQuery
-- **Topological sort** — recalculation walks nodes in dependency order so downstream nodes always calculate after upstream nodes settle
-- **Demand-weighted splitting** — belt output is divided among consumers by demand ratio, not given to each consumer in full
-- **Coordinate systems** — the canvas uses a CSS `transform: translate() scale()` camera; node positions are in world space; SVG edges are drawn in screen space
-- **Save format** — plain JSON, human-readable, easy to back up or version-control
+- **Single file:** the entire application is one `.html` file with no external dependencies, no framework, and no build step
+- **Vanilla JavaScript:** no React, no Vue, no jQuery
+- **Topological sort:** recalculation walks nodes in dependency order so downstream nodes always calculate after upstream nodes settle
+- **Demand-weighted splitting:** belt output is divided among consumers by demand ratio, not given to each consumer in full
+- **Coordinate systems:** the canvas uses a CSS `transform: translate() scale()` camera; node positions are in world space; SVG edges are drawn in screen space
+- **Save format:** plain JSON, human-readable, easy to back up or version-control
 
 ---
 
