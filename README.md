@@ -2,7 +2,7 @@
 
 A node-based, visual production chain calculator for **Dyson Sphere Program**. Plan, balance, and debug your entire factory from raw ore to finished product — including every belt, sorter, smelter, assembler, and power plant — all in your browser with no install required.
 
-**🔗 Live App: [https://dkoszenski.github.io/DSP-Factory-Planner/](https://dkoszenski.github.io/DSP-Factory-Planner/)**
+**Live App: [https://dkoszenski.github.io/DSP-Factory-Planner/](https://dkoszenski.github.io/DSP-Factory-Planner/)**
 
 ---
 
@@ -26,11 +26,10 @@ All math uses the actual in-game numbers: verified mining rates, sorter trip spe
 ## Getting Started
 
 1. Open the app at [https://dkoszenski.github.io/DSP-Factory-Planner/](https://dkoszenski.github.io/DSP-Factory-Planner/)
-2. A **Mining Node** is placed for you automatically to get started
-3. Click any node in the **Nodes tab** on the right panel to add more nodes, or right-click anywhere on the canvas for a context menu
-4. Click an output port (gold dot) and drag to an input port (teal dot) to connect two nodes
-5. Select a node to edit its properties in the **Properties tab**
-6. Watch the **Analysis tab** for bottlenecks and warnings across your whole chain
+2. Right-click the canvas to add your first node, or use the Nodes tab in the right sidebar
+3. Click an output port (gold dot, right side of a node) and drag to an input port (teal dot, left side) to connect two nodes
+4. Select a node to edit its properties in the **Properties tab**
+5. Watch the **Analysis tab** for bottlenecks and warnings across your whole chain
 
 No install. No server. No build step. Just open the HTML file in any modern browser.
 
@@ -42,11 +41,11 @@ No install. No server. No build step. Just open the HTML file in any modern brow
 
 The main workspace where your factory graph lives. Nodes are positioned freely and connected with curved lines.
 
-- **Dot grid background** for spatial reference
-- **Curved Bezier connections** color-coded by the item they carry and their health status
-- **Midpoint pills** on every connection showing the item icon, item name, and current flow rate
-- **Zoom controls** in the bottom-left corner (`+` / `−` buttons or scroll wheel)
-- **Zoom percentage** displayed between the zoom buttons
+- Dot grid background for spatial reference
+- Curved Bezier connections color-coded by the item they carry and health status
+- Midpoint pills on every connection showing item name and flow rate — visible on hover
+- Zoom controls in the bottom-left corner (+ / - buttons or scroll wheel, zooms toward cursor)
+- Right-click empty canvas to open a context menu with all addable node types
 
 ### Right Sidebar
 
@@ -54,130 +53,130 @@ Three tabs:
 
 | Tab | Purpose |
 |-----|---------|
-| **Nodes** | Palette of all available node types. Click to add to center of view, or drag to a specific position on the canvas. Also shows quick-reference tips. |
+| **Nodes** | Palette of all available node types. Click any to add it at the center of the current view. |
 | **Properties** | Edit every setting for the selected node — count, recipe, sorter tiers, sorter reach, VU level, fuel type, etc. Shows a live stats panel at the bottom. |
-| **Analysis** | Global summary: total power generated, total node count, a list of all warnings and bottlenecks, and a per-node breakdown you can click to jump straight to any node's properties. |
+| **Analysis** | Global summary: warnings, bottlenecks, and a per-node breakdown. Click any entry to pan to that node and highlight it. |
 
 ### Header Bar
 
 | Button | Action |
 |--------|--------|
-| 💾 Save | Downloads your current factory as a `.json` file |
-| 📂 Load | Opens a file picker to load a previously saved `.json` |
-| ⊞ Fit view | Automatically zooms and pans to fit all nodes in the viewport |
-| 🗑 Clear all | Removes all nodes and connections (asks for confirmation) |
+| Save | Downloads your current factory as a `.json` file |
+| Load | Opens a file picker to load a previously saved `.json` |
+| Fit view | Automatically zooms and pans to fit all nodes in the viewport |
+| Clear all | Removes all nodes and connections (asks for confirmation) |
 
 ---
 
 ## Node Types
 
-There are **14 node types**, each representing a category of building in Dyson Sphere Program.
+There are **14 node types**, each representing a category of building in Dyson Sphere Program. All nodes start with no recipe or resource selected — a blank slate. This lets the connection system and recipe filtering work together without conflict.
 
-### ⛏️ Mining Node
+### Mining Node
 
 Represents one or more Mining Machines on a resource patch.
 
-- **Resource** — select which item is being mined (iron ore, coal, silicon ore, titanium ore, etc.)
-- **Miners** — add as many miners as you have, each with its own vein count (since different miners may cover different numbers of veins in-game)
-- **VU Level** — Veins Utilization research level (0–20). Each level adds +10% mining speed per vein. Level 0 = 30 ore/min per vein, Level 5 = 45/min, Level 10 = 60/min.
+- **Resource** — searchable dropdown to select what is being mined
+- **Miners** — add as many miners as you have, each with its own vein count
+- **VU Level** — Veins Utilization research level (0–20). Each level adds +10% mining speed per vein.
 
-Output rate = (veins × 30 × (1 + VU_level × 0.1)) summed across all miners.
+Output rate = (veins x 30 x (1 + VU_level x 0.1)) summed across all miners.
 
 The count badge in the header shows how many miners are in the node at a glance.
 
-### 💧 Water Pump
+### Water Pump
 
 Represents Water Pump buildings on a water body.
 
 - **Count** — number of pumps
-- **VU Level** — Veins Utilization level (affects pump output, +10% per level)
+- **VU Level** — affects pump output rate (+10% per level)
 
 Base rate: 50 water/min per pump.
 
-### 🛢️ Oil Extractor
+### Oil Extractor
 
 Represents Oil Extractor buildings on a crude oil seep.
 
 - **Count** — number of extractors
-- **Rate per extractor** — base extraction rate (varies by oil seep, visible in-game)
+- **Rate per extractor** — base extraction rate (varies by seep, visible in-game)
 - **VU Level** — resource utilization research multiplier
 
-### ➡️ Belt
+### Belt
 
 Represents a section of Conveyor Belt.
 
 - **Tier** — Mk.I (360/min), Mk.II (720/min), or Mk.III (1,800/min)
 
-Belts accept **multiple inputs** — you can connect two or more upstream nodes to the same belt. Each new connection gets its own input port automatically. The belt sums all incoming flow, caps it at belt capacity, and shows:
+Belts accept **multiple inputs**. Each new connection gets its own input port automatically. The belt sums all incoming flow, caps it at capacity, and shows the dominant item, load percentage, and an overflow warning if inputs exceed capacity. When multiple downstream nodes pull from the same belt, the belt's output is split proportionally based on each consumer's demand.
 
-- The item being carried (determined by the dominant source)
-- A color-coded load bar with percentage and rate
-- "X sources" if multiple inputs are connected
-- An overflow warning if total input exceeds capacity
+### Arc Smelter
 
-### 🔥 Arc Smelter
-
-Represents one or more Arc Smelter buildings (also covers Plane Smelter and Negentropy Smelter).
+Represents Arc Smelter, Plane Smelter, or Negentropy Smelter buildings.
 
 - **Count** — number of smelters
-- **Recipe** — any smelter recipe (see [Recipes](#recipes) below)
-- **Input Sorter** — tier (Mk.I/II/III) and reach (1–3 squares). Reach affects speed: a Mk.I sorter at 2 squares is half speed.
-- **Output Sorter** — same options
+- **Recipe** — searchable dropdown for any smelter recipe
+- **Input Sorter / Output Sorter** — tier (Mk.I/II/III) and reach (1–3 squares)
 
-One input port is generated **per recipe ingredient**. The recipe for Titanium Alloy needs Titanium Ingot, Steel, and Sulfuric Acid, so the node will show three teal input ports. Each port validates that the correct item is connected before allowing the connection.
+One input port is generated per recipe ingredient. Each port validates that the correct item is being connected before allowing the connection.
 
-### 🏭 Assembler
+### Assembler
 
-Represents one or more Assembling Machine buildings (Mk.I, Mk.II, or Mk.III).
+Represents Assembling Machine buildings (Mk.I, Mk.II, or Mk.III).
 
 - **Count** — number of assemblers
-- **Tier** — Mk.I (×0.75 speed), Mk.II (×1.0 speed), Mk.III (×1.5 speed)
-- **Recipe** — any assembler recipe (91 recipes total, including all building recipes)
+- **Tier** — Mk.I (x0.75 speed), Mk.II (x1.0 speed), Mk.III (x1.5 speed)
+- **Recipe** — searchable dropdown for any assembler recipe (91 recipes including all building recipes)
 - **Input Sorter / Output Sorter** — tier and reach
 
-Same dynamic port system as the Arc Smelter — one input port per recipe ingredient.
+Same dynamic port system as the Arc Smelter.
 
-### ⚗️ Chemical Plant
+### Chemical Plant
 
-Represents Chemical Plant buildings. Uses a custom recipe format since chemical plants can handle both standard and fully custom setups.
+Represents Chemical Plant buildings with a configurable custom recipe.
 
 - **Count** — number of plants
-- **Input item / Output item** — selectable from the full item list
+- **Input item / Output item** — searchable dropdowns
 - **Recipe time** — seconds per cycle
 - **Input qty / Output qty** — items per cycle
 - **Input Sorter / Output Sorter** — tier and reach
 
-### 🛢️ Oil Refinery
+### Oil Refinery
 
 Represents Oil Refinery buildings.
 
 - **Count** — number of refineries
-- **Recipe** — Plasma Refining, X-Ray Cracking, or Reformed Refining
+- **Recipe** — Plasma Refining (single input), X-Ray Cracking (two inputs), or Reformed Refining (three inputs)
 - **Input Sorter / Output Sorter** — tier and reach
 
-### 🧫 Fractionator
+Multi-input recipes show one port per ingredient and use the bottleneck calculation model.
+
+### Fractionator
 
 Represents Fractionator buildings for Deuterium production.
 
 - **Count** — number of fractionators
-- Accepts Hydrogen input only
-- Produces Deuterium at 1% per pass (hydrogen loops through; only 1% converts per transit)
+- Accepts Hydrogen only
+- Produces Deuterium at 1% of hydrogen throughput per pass
 
-### ⚛️ Particle Collider
+### Particle Collider
 
 Represents Miniature Particle Collider buildings.
 
 - **Count** — number of colliders
-- **Recipe** — Deuterium (from Hydrogen), Antimatter (from Critical Photon), or Strange Matter
+- **Recipe** — Deuterium (single input), Antimatter (single input), or Strange Matter (three inputs)
+- **Input Sorter / Output Sorter** — tier and reach
 
-### 🔬 Matrix Lab
+### Matrix Lab
 
 Represents Matrix Lab buildings in production mode.
 
 - **Count** — number of labs
-- **Recipe** — any of the 6 science matrices (Electromagnetic, Energy, Structure, Information, Gravity, Universe)
+- **Recipe** — any of the 6 science matrices
+- **Input Sorter / Output Sorter** — tier and reach
 
-### 🔋 Thermal Power Plant
+All matrix recipes are multi-input. Universe Matrix takes 6 simultaneous inputs. One port is shown per ingredient and throughput is limited by the worst-supplied ingredient.
+
+### Thermal Power Plant
 
 Represents Thermal Power Plant buildings.
 
@@ -185,23 +184,23 @@ Represents Thermal Power Plant buildings.
 - **Fuel type** — Coal (60/min), Energized Graphite (24/min), Hydrogen (18/min), Refined Oil (~25.7/min), Fire Ice (~33.8/min)
 - **Input Sorter** — tier and reach
 
-Output is 2.16 MW per fully-fed plant. The efficiency bar shows what percentage of plants are actually receiving fuel.
+Output: 2.16 MW per fully-fed plant.
 
-### ☢️ Mini Fusion Power Plant
+### Mini Fusion Power Plant
 
 Represents Mini Fusion Power Plant buildings.
 
 - **Count** — number of plants
 - Accepts only Deuteron Fuel Rods
-- Output is 24 MW per fully-fed plant
+- Output: 24 MW per fully-fed plant
 
-### 📥 Consumer
+### Consumer
 
-A generic sink node for anything that consumes items without producing an output (research labs in research mode, Dyson sphere launchers, turrets, etc.).
+A generic sink node for anything that consumes items without producing an output.
 
 - **Count** — number of buildings
-- **Item** — what item it consumes
-- **Consumption per minute per building** — manual entry
+- **Item** — searchable dropdown for what is consumed
+- **Consumption per minute** — per building
 
 ---
 
@@ -209,48 +208,42 @@ A generic sink node for anything that consumes items without producing an output
 
 ### Drawing a Connection
 
-1. Click and hold on an **output port** (gold dot, right side of a node)
-2. Drag to an **input port** (teal dot, left side of a node)
-3. Release on the input port to complete the connection
+1. Click and hold on an output port (gold dot, right side of a node)
+2. Drag to an input port (teal dot, left side of a node)
+3. Release to complete the connection
 
-A dashed blue line follows your cursor while dragging to show the in-progress connection.
+A dashed line follows the cursor while dragging.
 
 ### Connection Validation
 
-The planner validates every connection before allowing it. If you try to connect an incompatible item to a node input, the connection is **rejected** and:
+Every connection is validated before being allowed. If the item being carried does not match what the destination port expects, the connection is rejected:
 
-- The target node **shakes** with a brief animation
-- A red error toast appears above the node for **3 seconds** explaining exactly why — e.g. "⚠ Slot expects Iron Ingot, not Copper Ingot"
+- The target node shakes briefly
+- A red error message appears above the node for 3 seconds explaining the mismatch
 
-Validation rules:
-- **Arc Smelter / Assembler** — each input port is tied to a specific recipe ingredient. Port 1 might expect Iron Ingot, Port 2 expects Copper Ingot. Connecting the wrong item to either slot is blocked.
-- **Fractionator** — only accepts Hydrogen
-- **Mini Fusion** — only accepts Deuteron Fuel Rods
-- **Chemical Plant** — validates against the configured input item
-- **Belts** — accept any item (they're just transport)
-- **Mining / Water Pump / Oil Extractor** — no inputs, cannot be connected to
+Because all nodes start with no recipe selected, connections are always accepted on a fresh node. The recipe filter then narrows based on what you connect. Once a recipe is selected, subsequent connections to remaining ports are validated against the specific ingredient expected at each slot.
 
-### Multiple Inputs on a Belt
+### Hover Labels
 
-Belts support multiple upstream connections. Each time you connect something new to a belt's input area, a new port slot is created. The belt correctly sums all inputs and enforces its capacity limit, showing overflow warnings if the total exceeds the belt's rated capacity.
+Connection lines show a midpoint label (item name and flow rate) when hovered. Selected connections always show their label. All other labels are hidden until hovered.
 
-### Selecting and Deleting Connections
+### Deleting Connections
 
-- **Click** on a connection line to select it (turns blue)
-- Press **Delete** or **Backspace** to remove the selected connection
-- **Right-click** a connection and choose "🗑 Delete connection"
+- Click a connection line to select it, then press Delete or Backspace
+- Right-click a connection line and choose Delete connection
 
 ---
 
 ## Smart Recipe Filtering
 
-When a node has items connected to its inputs, the recipe dropdown is automatically filtered to only show recipes that use those items.
+When a node has items connected to its inputs, the recipe dropdown automatically filters to only show recipes that use those items.
 
-- Connect an **Iron Ingot belt** to an assembler → only recipes that require Iron Ingot are shown
-- Connect both an **Iron Ingot belt** and a **Copper Ingot belt** → only recipes requiring both are shown
-- A teal info banner shows how many recipes are being filtered and which items are being matched
-- If no recipes match all connected items, the filter is cleared and all recipes are shown with a warning
-- With only a single input connected, the recipe auto-switches if the current recipe doesn't use that item
+- Connect an Iron Ingot belt to an assembler — only recipes requiring Iron Ingot are shown
+- Connect both Iron Ingot and Copper Ingot belts — only recipes requiring both are shown
+- A teal banner shows how many recipes are being filtered and which items are matched
+- If no recipes match all connected inputs, the filter clears and all recipes are shown with a warning
+
+The search input inside the recipe dropdown matches on recipe name only, not on the ingredient list shown in the full label.
 
 ---
 
@@ -258,58 +251,48 @@ When a node has items connected to its inputs, the recipe dropdown is automatica
 
 ### Multi-Input Bottleneck Model
 
-For any production node with multiple inputs (Arc Smelter, Assembler, etc.), the planner calculates throughput for **each ingredient independently**, then uses the **worst-supplied ingredient** to determine actual output.
+Arc Smelters, Assemblers, Oil Refineries, Particle Colliders, and Matrix Labs all use a bottleneck model across every ingredient:
 
 For each recipe input:
-- `need_per_min = (qty / recipe_time) × 60 × count × speed_multiplier`
+- `need_per_min = (qty / recipe_time) x 60 x count x speed_multiplier`
 - `effective = min(arriving, sorter_cap, need_per_min)`
 - `fill_ratio = effective / need_per_min`
 
-The output rate scales by the lowest `fill_ratio` across all inputs. If Iron Ingot is at 100% but Copper Ingot is at 40%, the assembler runs at 40% and the node card shows the per-ingredient supply breakdown.
+Output scales by the lowest fill ratio across all inputs. The node card shows each ingredient's arriving vs. needed rate so you can see at a glance which input is limiting production.
+
+### Demand-Weighted Belt Splitting
+
+When multiple downstream nodes pull from the same belt, the belt's output is divided proportionally by demand. If two assemblers each need 60/min from a 60/min gear belt, each receives 30/min — not 60/min each. This makes the calculations accurate for real factory layouts where resources are shared.
 
 ### Sorter Throughput
 
-Sorters are often the hidden bottleneck. Their effective speed depends on both tier and reach:
-
-| Tier | Speed at 1 square | Speed at 2 squares | Speed at 3 squares |
-|------|------------------|--------------------|--------------------|
+| Tier | 1 square | 2 squares | 3 squares |
+|------|----------|-----------|-----------|
 | Mk.I | 90/min | 45/min | 30/min |
 | Mk.II | 180/min | 90/min | 60/min |
 | Mk.III | 360/min | 180/min | 120/min |
 
-These caps are applied per-machine and multiplied by count, so 6 assemblers with Mk.I sorters at 1 square = 540/min total sorter capacity per ingredient.
+These caps are applied per ingredient per machine and multiplied by count.
 
 ### Belt Capacities
 
 | Tier | Capacity |
 |------|---------|
-| Mk.I | 360 items/min |
-| Mk.II | 720 items/min |
-| Mk.III | 1,800 items/min |
-
-### Mining Rate
-
-`output = veins × 30 × (1 + VU_level × 0.1)` per miner, summed across all miners in the node.
+| Mk.I | 360/min |
+| Mk.II | 720/min |
+| Mk.III | 1,800/min |
 
 ### Assembler Speed Multipliers
 
 | Tier | Multiplier |
 |------|-----------|
-| Mk.I | ×0.75 |
-| Mk.II | ×1.0 |
-| Mk.III | ×1.5 |
+| Mk.I | x0.75 |
+| Mk.II | x1.0 |
+| Mk.III | x1.5 |
 
-### Thermal Plant Fuel Burn Rates
+### Mining Rate
 
-Rates derived from `burn_time = (energy_MJ × 0.8) / 2.16 MW`:
-
-| Fuel | Rate at 100% load |
-|------|-----------------|
-| Coal | 60/min |
-| Energized Graphite | 24/min |
-| Hydrogen | 18/min |
-| Refined Oil | ~25.7/min |
-| Fire Ice | ~33.8/min |
+`output = veins x 30 x (1 + VU_level x 0.1)` per miner, summed across all miners.
 
 ---
 
@@ -318,34 +301,37 @@ Rates derived from `burn_time = (energy_MJ × 0.8) / 2.16 MW`:
 ### Node Cards
 
 Each node displays:
-- **Header** — icon, name, count badge (e.g. `x6`) showing building count at a glance
-- **Input ports** (teal dots) — one per recipe ingredient for multi-input machines
-- **Output port** (gold dot) — what the node produces
-- **Stats area** — live calculation results with colored item chips, load bars, and efficiency bars
+
+- **Header** — node name and a count badge (e.g. x6) showing the building count at a glance. If you rename a node, the original type name appears as a subtitle.
+- **Input ports** (teal dots, left side) — one per recipe ingredient for multi-input machines; one per connected source for belts, plus one spare
+- **Output port** (gold dot, right side)
+- **Stats area** — live per-ingredient supply bars, output rate, and efficiency bar
 - **Left border accent** — color-coded to the item the node is outputting
 
 ### Connection Lines
 
-Lines between nodes are:
-- **Colored by item** — each item has a unique color (iron ore is red, coal is gray, copper ingot is orange, energized graphite is dark gray, etc.)
-- **Width changes** with selection (selected connections turn blue and thicken)
-- **Glow layer** gives depth without using gradients
-- **Health-tinted** — amber if efficiency 50–89%, red if below 50%
+- Colored by item carried
+- Health-tinted: amber if efficiency 50–89%, red if below 50%
+- Glow layer for visual depth
+- Thicker and blue when selected
 
-### Connection Midpoint Pills
+### Midpoint Labels
 
-Every connection shows a pill at its midpoint containing:
-- The item's emoji icon
-- The item name
-- The current flow rate in `/min` (or MW for power)
+Shown on hover (or always for the selected connection). Displays item name and current flow rate.
 
-### Load and Efficiency Bars
+### Efficiency and Load Bars
 
-- **Green** — 0–80% load (healthy)
-- **Amber** — 81–100% load (approaching limit)
-- **Red** — over 100% / below 50% efficiency (problem)
+- Green — healthy (0–80% load, 90–100% efficiency)
+- Amber — approaching limit or partially starved
+- Red — saturated belt or severely starved node
 
-Belts show "Load" with percentage and rate. Production nodes show "Efficiency" with current output vs. maximum output.
+### Analysis Tab Highlights
+
+Clicking any warning or node entry in the Analysis tab pans the canvas to center that node, selects it, and plays a 2-second amber glow animation so it's easy to locate in a complex layout.
+
+### Selected Node Glow
+
+The currently selected node has a three-layer blue glow: a tight ring, a soft mid bloom, and a wider outer halo.
 
 ---
 
@@ -357,40 +343,38 @@ Belts show "Load" with percentage and rate. Production nodes show "Efficiency" w
 |--------|---------|
 | Pan | Middle mouse button + drag, or Alt + left-click drag |
 | Zoom in/out | Scroll wheel (zooms toward cursor position) |
-| Zoom in | Click `+` button (bottom-left) |
-| Zoom out | Click `−` button (bottom-left) |
-| Fit all nodes in view | Click `⊞ Fit view` button (header) |
+| Zoom in | Click + button (bottom-left) |
+| Zoom out | Click - button (bottom-left) |
+| Fit all nodes | Click Fit view (header) |
+| Add node | Right-click empty canvas, or click node type in Nodes tab |
 
 ### Node Interactions
 
 | Action | Control |
 |--------|---------|
-| Add node | Click palette item in Nodes tab, or right-click empty canvas |
 | Move node | Left-click drag on node header or body |
-| Select node | Left-click node (opens Properties tab) |
-| Edit properties | Select node → Properties tab, or right-click → Edit properties |
-| Delete node | Click `✕` on node header, or select + press Delete, or right-click → Delete node |
-| Rename node | Select node → Properties tab → Name field |
+| Select node | Left-click node |
+| Edit properties | Select node, then Properties tab — or right-click, Edit properties |
+| Delete node | Click X on node header, or select + Delete, or right-click, Delete node |
+| Rename node | Select node, Properties tab, Name field |
 
 ### Multi-Selection
 
 | Action | Control |
 |--------|---------|
-| Box select | Left-click drag on empty canvas area — a dashed blue rectangle appears |
-| Add to selection | Shift + left-click on a node |
-| Remove from selection | Shift + left-click on an already-selected node |
-| Move all selected | Left-click drag on any node in the selection — all move together |
-| Delete all selected | Press Delete or Backspace with multiple nodes selected |
-| Clear selection | Click empty canvas, or press Escape |
+| Box select | Left-click drag on empty canvas |
+| Add to selection | Shift + left-click |
+| Move all selected | Left-click drag any node in the selection |
+| Delete all selected | Delete or Backspace |
+| Clear selection | Click empty canvas or press Escape |
 
 ### Connection Controls
 
 | Action | Control |
 |--------|---------|
-| Draw connection | Left-click drag from output port (gold) to input port (teal) |
-| Select connection | Left-click on the connection line |
-| Delete selected connection | Press Delete or Backspace |
-| Delete connection (context menu) | Right-click connection → Delete connection |
+| Draw connection | Left-click drag from output port to input port |
+| Select connection | Left-click on the line |
+| Delete connection | Select + Delete or Backspace; or right-click, Delete connection |
 
 ### Keyboard Shortcuts
 
@@ -405,135 +389,131 @@ Belts show "Load" with percentage and rate. Production nodes show "Efficiency" w
 
 ### Arc Smelter (15 recipes)
 
-Covers Arc Smelter, Plane Smelter, and Negentropy Smelter.
-
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Iron Ingot | 1× Iron Ore | 1× Iron Ingot | 1s |
-| Copper Ingot | 1× Copper Ore | 1× Copper Ingot | 1s |
-| Stone Brick | 1× Stone Ore | 1× Stone Brick | 1s |
-| Energized Graphite | 2× Coal | 1× Energized Graphite | 2s |
-| Glass | 2× Stone Ore | 1× Glass | 2s |
-| Magnet | 1× Iron Ore | 1× Magnet | 1.5s |
-| Steel | 3× Iron Ingot | 1× Steel | 3s |
-| High-Purity Silicon | 2× Silicon Ore | 1× High-Purity Silicon | 2s |
-| Crystal Silicon | 1× High-Purity Silicon | 1× Crystal Silicon | 2s |
-| Crystal Silicon (Fractal) | 1× Fractal Silicon | 2× Crystal Silicon | 1.5s |
-| Diamond | 1× Energized Graphite | 1× Diamond | 2s |
-| Diamond (Kimberlite) | 1× Kimberlite Ore | 2× Diamond | 1.5s |
-| Titanium Ingot | 2× Titanium Ore | 1× Titanium Ingot | 2s |
-| Titanium Alloy | 4× Ti Ingot + 4× Steel + 8× Sulfuric Acid | 4× Titanium Alloy | 12s |
-| Silicon Ore (from Stone) | 10× Stone Ore | 1× Silicon Ore | 10s |
+| Iron Ingot | 1x Iron Ore | 1x Iron Ingot | 1s |
+| Copper Ingot | 1x Copper Ore | 1x Copper Ingot | 1s |
+| Stone Brick | 1x Stone Ore | 1x Stone Brick | 1s |
+| Energized Graphite | 2x Coal | 1x Energized Graphite | 2s |
+| Glass | 2x Stone Ore | 1x Glass | 2s |
+| Magnet | 1x Iron Ore | 1x Magnet | 1.5s |
+| Steel | 3x Iron Ingot | 1x Steel | 3s |
+| High-Purity Silicon | 2x Silicon Ore | 1x High-Purity Silicon | 2s |
+| Crystal Silicon | 1x High-Purity Silicon | 1x Crystal Silicon | 2s |
+| Crystal Silicon (Fractal) | 1x Fractal Silicon | 2x Crystal Silicon | 1.5s |
+| Diamond | 1x Energized Graphite | 1x Diamond | 2s |
+| Diamond (Kimberlite) | 1x Kimberlite Ore | 2x Diamond | 1.5s |
+| Titanium Ingot | 2x Titanium Ore | 1x Titanium Ingot | 2s |
+| Titanium Alloy | 4x Ti Ingot + 4x Steel + 8x Sulfuric Acid | 4x Titanium Alloy | 12s |
+| Silicon Ore (from Stone) | 10x Stone Ore | 1x Silicon Ore | 10s |
 
 ### Assembler (91 recipes)
-
-Includes all component recipes and all building recipes. A selection of key ones:
 
 **Core Components**
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Gear | 1× Iron Ingot | 1× Gear | 1s |
-| Magnetic Coil | 2× Magnet + 1× Copper Ingot | 2× Magnetic Coil | 1s |
-| Circuit Board | 2× Iron Ingot + 1× Copper Ingot | 2× Circuit Board | 1s |
-| Electric Motor | 2× Iron Ingot + 1× Gear + 1× Magnetic Coil | 1× Electric Motor | 2s |
-| EM Turbine | 2× Electric Motor + 2× Magnetic Coil | 1× EM Turbine | 2s |
-| Super-Magnetic Ring | 2× EM Turbine + 3× Magnet + 1× E. Graphite | 2× Super-Magnetic Ring | 3s |
-| Processor | 2× Circuit Board + 2× Microcrystalline | 1× Processor | 3s |
-| Quantum Chip | 2× Processor + 2× Plane Filter | 1× Quantum Chip | 6s |
+| Gear | 1x Iron Ingot | 1x Gear | 1s |
+| Magnetic Coil | 2x Magnet + 1x Copper Ingot | 2x Magnetic Coil | 1s |
+| Circuit Board | 2x Iron Ingot + 1x Copper Ingot | 2x Circuit Board | 1s |
+| Electric Motor | 2x Iron Ingot + 1x Gear + 1x Magnetic Coil | 1x Electric Motor | 2s |
+| EM Turbine | 2x Electric Motor + 2x Magnetic Coil | 1x EM Turbine | 2s |
+| Super-Magnetic Ring | 2x EM Turbine + 3x Magnet + 1x E. Graphite | 2x Super-Magnetic Ring | 3s |
+| Processor | 2x Circuit Board + 2x Microcrystalline | 1x Processor | 3s |
+| Quantum Chip | 2x Processor + 2x Plane Filter | 1x Quantum Chip | 6s |
 
 **Advanced Components**
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Casimir Crystal | 1× Ti Crystal + 2× Graphene + 12× Hydrogen | 1× Casimir Crystal | 4s |
-| Plane Filter | 1× Casimir Crystal + 2× Titanium Glass | 1× Plane Filter | 12s |
-| Graviton Lens | 4× Diamond + 1× Strange Matter | 1× Graviton Lens | 6s |
-| Particle Container | 2× EM Turbine + 2× Copper Ingot + 2× Graphene | 1× Particle Container | 4s |
-| Annihilation Constraint Sphere | 1× Particle Container + 1× Processor | 1× A.C. Sphere | 20s |
+| Casimir Crystal | 1x Ti Crystal + 2x Graphene + 12x Hydrogen | 1x Casimir Crystal | 4s |
+| Plane Filter | 1x Casimir Crystal + 2x Titanium Glass | 1x Plane Filter | 12s |
+| Graviton Lens | 4x Diamond + 1x Strange Matter | 1x Graviton Lens | 6s |
+| Particle Container | 2x EM Turbine + 2x Copper Ingot + 2x Graphene | 1x Particle Container | 4s |
+| Annihilation Constraint Sphere | 1x Particle Container + 1x Processor | 1x A.C. Sphere | 20s |
 
 **Dyson Sphere Chain**
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Solar Sail | 1× Graphene + 1× Photon Combiner | 2× Solar Sail | 4s |
-| Frame Material | 4× Carbon Nanotube + 1× Ti Alloy + 1× H-P Silicon | 1× Frame Material | 6s |
-| Dyson Sphere Component | 3× Frame Material + 3× Solar Sail + 3× Processor | 1× DSP Component | 8s |
-| Small Carrier Rocket | 2× DSP Component + 2× Quantum Chip + 2× D. Fuel Rod | 1× Rocket | 6s |
+| Solar Sail | 1x Graphene + 1x Photon Combiner | 2x Solar Sail | 4s |
+| Frame Material | 4x Carbon Nanotube + 1x Ti Alloy + 1x H-P Silicon | 1x Frame Material | 6s |
+| Dyson Sphere Component | 3x Frame Material + 3x Solar Sail + 3x Processor | 1x DSP Component | 8s |
+| Small Carrier Rocket | 2x DSP Component + 2x Quantum Chip + 2x D. Fuel Rod | 1x Rocket | 6s |
 
 **Fuel Rods**
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Hydrogen Fuel Rod | 1× Ti Ingot + 10× Hydrogen | 2× H. Fuel Rod | 6s |
-| Deuteron Fuel Rod | 1× Ti Alloy + 10× Deuterium + 1× Super-Mag Ring | 2× D. Fuel Rod | 12s |
-| Antimatter Fuel Rod | 10× Antimatter + 10× Hydrogen + 1× A.C. Sphere + 1× Ti Alloy | 2× AM Fuel Rod | 24s |
+| Hydrogen Fuel Rod | 1x Ti Ingot + 10x Hydrogen | 2x H. Fuel Rod | 6s |
+| Deuteron Fuel Rod | 1x Ti Alloy + 10x Deuterium + 1x Super-Mag Ring | 2x D. Fuel Rod | 12s |
+| Antimatter Fuel Rod | 10x Antimatter + 10x Hydrogen + 1x A.C. Sphere + 1x Ti Alloy | 2x AM Fuel Rod | 24s |
 
 **Proliferators**
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Proliferator Mk.I | 1× Coal | 1× Proliferator Mk.I | 0.5s |
-| Proliferator Mk.II | 2× Mk.I + 1× Diamond | 1× Proliferator Mk.II | 1s |
-| Proliferator Mk.III | 2× Mk.II + 1× Carbon Nanotube | 1× Proliferator Mk.III | 2s |
+| Proliferator Mk.I | 1x Coal | 1x Proliferator Mk.I | 0.5s |
+| Proliferator Mk.II | 2x Mk.I + 1x Diamond | 1x Proliferator Mk.II | 1s |
+| Proliferator Mk.III | 2x Mk.II + 1x Carbon Nanotube | 1x Proliferator Mk.III | 2s |
 
 **Building Recipes (selected)**
 
 | Building | Key Ingredients |
 |----------|----------------|
-| Conveyor Belt Mk.I | 2× Iron Ingot + 1× Gear → 3 belts |
-| Conveyor Belt Mk.II | 3× Belt Mk.I + 1× EM Turbine → 3 belts |
-| Conveyor Belt Mk.III | 3× Belt Mk.II + 1× Super-Mag Ring + 1× Graphene → 3 belts |
-| Sorter Mk.I | 1× Gear + 1× Circuit Board → 1 sorter |
-| Sorter Mk.II | 2× Sorter Mk.I + 1× Electric Motor → 2 sorters |
-| Sorter Mk.III | 2× Sorter Mk.II + 1× EM Turbine → 2 sorters |
-| Arc Smelter | 4× Iron Ingot + 2× Stone Brick + 4× Circuit Board + 4× Magnetic Coil |
-| Assembler Mk.I | 4× Iron Ingot + 8× Gear + 4× Circuit Board |
-| Assembler Mk.II | 1× Assembler Mk.I + 4× Graphene + 1× Processor |
-| Assembler Mk.III | 1× Assembler Mk.II + 2× Particle Broadband + 2× Processor |
-| Matrix Lab | 8× Iron Ingot + 4× Glass + 4× Circuit Board + 4× Magnetic Coil |
-| Planetary Logistics Station | 40× Steel + 40× Ti Ingot + 40× Processor + 20× Particle Container |
-| Interstellar Logistics Station | 40× Ti Alloy + 40× Ti Glass + 40× Processor + 20× Particle Container |
-| Vertical Launching Silo | 80× Ti Alloy + 30× Frame Material + 10× Quantum Chip |
+| Conveyor Belt Mk.I | 2x Iron Ingot + 1x Gear — 3 belts |
+| Conveyor Belt Mk.II | 3x Belt Mk.I + 1x EM Turbine — 3 belts |
+| Conveyor Belt Mk.III | 3x Belt Mk.II + 1x Super-Mag Ring + 1x Graphene — 3 belts |
+| Sorter Mk.I | 1x Gear + 1x Circuit Board — 1 sorter |
+| Sorter Mk.II | 2x Sorter Mk.I + 1x Electric Motor — 2 sorters |
+| Sorter Mk.III | 2x Sorter Mk.II + 1x EM Turbine — 2 sorters |
+| Arc Smelter | 4x Iron Ingot + 2x Stone Brick + 4x Circuit Board + 4x Magnetic Coil |
+| Assembler Mk.I | 4x Iron Ingot + 8x Gear + 4x Circuit Board |
+| Assembler Mk.II | 1x Assembler Mk.I + 4x Graphene + 1x Processor |
+| Assembler Mk.III | 1x Assembler Mk.II + 2x Particle Broadband + 2x Processor |
+| Matrix Lab | 8x Iron Ingot + 4x Glass + 4x Circuit Board + 4x Magnetic Coil |
+| Planetary Logistics Station | 40x Steel + 40x Ti Ingot + 40x Processor + 20x Particle Container |
+| Interstellar Logistics Station | 40x Ti Alloy + 40x Ti Glass + 40x Processor + 20x Particle Container |
+| Vertical Launching Silo | 80x Ti Alloy + 30x Frame Material + 10x Quantum Chip |
 
 ### Oil Refinery (3 recipes)
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Plasma Refining | 2× Crude Oil | 2× Refined Oil + 1× Hydrogen | 4s |
-| X-Ray Cracking | 1× Refined Oil + 2× Hydrogen | 3× Hydrogen + 1× E. Graphite | 4s |
-| Reformed Refining | 2× Refined Oil + 1× Hydrogen + 2× Coal | 3× Refined Oil | 4s |
+| Plasma Refining | 2x Crude Oil | 2x Refined Oil + 1x Hydrogen | 4s |
+| X-Ray Cracking | 1x Refined Oil + 2x Hydrogen | 3x Hydrogen + 1x E. Graphite | 4s |
+| Reformed Refining | 2x Refined Oil + 1x Hydrogen + 2x Coal | 3x Refined Oil | 4s |
 
 ### Chemical Plant (8 recipes)
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Plastic | 2× Refined Oil + 1× E. Graphite | 1× Plastic | 3s |
-| Graphene | 3× E. Graphite + 1× Sulfuric Acid | 2× Graphene | 3s |
-| Graphene (Fire Ice) | 2× Fire Ice | 2× Graphene + 1× Hydrogen | 2s |
-| Carbon Nanotube | 3× Graphene + 1× Ti Ingot | 2× Carbon Nanotube | 4s |
-| Carbon Nanotube (Spiniform) | 6× Spiniform Stalagmite Crystal | 2× Carbon Nanotube | 4s |
-| Organic Crystal | 2× Plastic + 1× Refined Oil + 1× Water | 1× Organic Crystal | 6s |
-| Sulfuric Acid | 6× Stone Ore + 4× Refined Oil + 4× Water | 4× Sulfuric Acid | 6s |
+| Plastic | 2x Refined Oil + 1x E. Graphite | 1x Plastic | 3s |
+| Graphene | 3x E. Graphite + 1x Sulfuric Acid | 2x Graphene | 3s |
+| Graphene (Fire Ice) | 2x Fire Ice | 2x Graphene + 1x Hydrogen | 2s |
+| Carbon Nanotube | 3x Graphene + 1x Ti Ingot | 2x Carbon Nanotube | 4s |
+| Carbon Nanotube (Spiniform) | 6x Spiniform Stalagmite Crystal | 2x Carbon Nanotube | 4s |
+| Organic Crystal | 2x Plastic + 1x Refined Oil + 1x Water | 1x Organic Crystal | 6s |
+| Sulfuric Acid | 6x Stone Ore + 4x Refined Oil + 4x Water | 4x Sulfuric Acid | 6s |
 
 ### Miniature Particle Collider (3 recipes)
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Deuterium | 10× Hydrogen | 5× Deuterium | 2.5s |
-| Antimatter | 2× Critical Photon | 2× Antimatter + 2× Hydrogen | 2s |
-| Strange Matter | 2× Iron Ingot + 10× Deuterium + 2× Particle Container | 1× Strange Matter | 8s |
+| Deuterium | 10x Hydrogen | 5x Deuterium | 2.5s |
+| Antimatter | 2x Critical Photon | 2x Antimatter + 2x Hydrogen | 2s |
+| Strange Matter | 2x Iron Ingot + 10x Deuterium + 2x Particle Container | 1x Strange Matter | 8s |
 
 ### Matrix Lab (6 recipes)
 
 | Recipe | Inputs | Output | Time |
 |--------|--------|--------|------|
-| Electromagnetic Matrix (Blue) | 1× Magnetic Coil + 1× Circuit Board | 1× EM Matrix | 3s |
-| Energy Matrix (Red) | 2× E. Graphite + 2× Hydrogen | 1× Energy Matrix | 6s |
-| Structure Matrix (Yellow) | 1× Diamond + 1× Titanium Crystal | 1× Structure Matrix | 8s |
-| Information Matrix (Green) | 2× Processor + 1× Particle Broadband | 1× Information Matrix | 10s |
-| Gravity Matrix (Purple) | 1× Graviton Lens + 1× Quantum Chip | 1× Gravity Matrix | 24s |
-| Universe Matrix (White) | 1 each of all 5 matrices + 1× Antimatter | 1× Universe Matrix | 15s |
+| Electromagnetic Matrix | 1x Magnetic Coil + 1x Circuit Board | 1x EM Matrix | 3s |
+| Energy Matrix | 2x E. Graphite + 2x Hydrogen | 1x Energy Matrix | 6s |
+| Structure Matrix | 1x Diamond + 1x Titanium Crystal | 1x Structure Matrix | 8s |
+| Information Matrix | 2x Processor + 1x Particle Broadband | 1x Information Matrix | 10s |
+| Gravity Matrix | 1x Graviton Lens + 1x Quantum Chip | 1x Gravity Matrix | 24s |
+| Universe Matrix | 1x each of all 5 matrices + 1x Antimatter | 1x Universe Matrix | 15s |
 
 ---
 
@@ -541,16 +521,14 @@ Includes all component recipes and all building recipes. A selection of key ones
 
 Your factory layout can be saved as a `.json` file and reloaded at any time.
 
-**To save:** Click **💾 Save** in the header. Your browser will download `dsp-factory.json`.
+**To save:** Click **Save** in the header. Your browser will download `dsp-factory.json`.
 
-**To load:** Click **📂 Load** in the header. Select a previously saved `.json` file. The canvas clears and the saved layout is restored, including all node positions, connections, settings, and the camera position.
+**To load:** Click **Load** in the header. Select a previously saved `.json` file. The canvas clears and the saved layout is restored, including all node positions, connections, and settings.
 
 **What is saved:**
 - All nodes (type, position, all property values, custom labels)
 - All connections (which nodes are connected and which ports)
 - The internal ID counter (ensures new nodes get unique IDs after loading)
-
-**What is not saved:** The camera zoom/pan position is reset to fit the loaded content.
 
 ---
 
@@ -558,32 +536,42 @@ Your factory layout can be saved as a `.json` file and reloaded at any time.
 
 ### Planning a Production Line
 
-Build your chain left to right: miners → belts → smelters → belts → assemblers → output. Connect nodes in order. The planner propagates flow calculations downstream automatically as you connect.
+Build your chain left to right: miners — belts — smelters — belts — assemblers — output. Connect nodes in order. The planner propagates flow calculations downstream automatically as you connect.
+
+### Null-Start Workflow
+
+All nodes start with no recipe or resource selected. The intended workflow is:
+
+1. Place a miner and select its resource
+2. Connect it to a belt
+3. Connect the belt to a smelter — the recipe dropdown narrows to recipes that use your ore
+4. Select the recipe — input ports appear for each ingredient
+5. Continue building downstream — each connection further narrows available recipes
+
+This way, recipe filtering and connection validation work together rather than against each other.
 
 ### Checking Bottlenecks
 
-Open the **Analysis tab** at any time for a complete list of warnings. Green means all nodes are balanced. Warnings appear for:
-- Any node below 90% efficiency (amber warning)
-- Any node below 50% efficiency (red error)
-- Any belt above 85% saturation (amber warning)
-- Any belt above 100% (red error — items are being lost)
-- Any sorter that is capping throughput before the belt or machine can
+Open the **Analysis tab** at any time. Warnings appear for:
+- Any node below 90% efficiency (amber)
+- Any node below 50% efficiency (red)
+- Any belt above 85% saturation (amber)
+- Any belt above 100% (red — items are being lost)
+- Any sorter capping throughput
+
+Click any warning to jump directly to that node in the canvas.
 
 ### Finding the Limiting Factor
 
-For a production node, the Properties tab shows a live stats panel at the bottom with per-ingredient supply: how much is arriving vs. how much is needed. The ingredient with the lowest arrival/need ratio is your bottleneck. Upgrade its sorter tier or reach first.
+Select a production node and look at the Properties tab live stats panel. Each ingredient shows its arrival rate vs. needed rate. The one with the lowest ratio is your bottleneck — upgrade its sorter tier or reduce reach first.
 
-### Multi-Smelter into One Belt
+### Multi-Source Belts
 
-Use a belt node with multiple inputs. Connect Smelter 1 → Belt, then connect Smelter 2 → the same Belt node. The belt will show "2 sources" and correctly sum both flows, then clamp to its capacity.
+Connect multiple upstream nodes to the same belt. The belt sums all inputs and correctly splits its output among all downstream consumers proportionally by demand.
 
 ### Veins Utilization Research
 
-VU Level is one of the most impactful early techs. Setting VU Level 5 on your mining nodes immediately shows the output increase, helping you decide how many extra smelters you can add before running out of ore throughput.
-
-### Recipe Filtering
-
-When you're not sure which recipe to use for an assembler, connect the belts you have first. The recipe dropdown will automatically narrow to only show recipes that use the items you're supplying. Recipes requiring items you haven't connected yet won't appear.
+VU Level is one of the most impactful early techs. Updating it on your mining nodes immediately shows the output change, helping you decide how many additional smelters you can support.
 
 ---
 
@@ -592,22 +580,26 @@ When you're not sure which recipe to use for an assembler, connect the belts you
 - **Single file** — the entire application is one `.html` file with no external dependencies, no framework, and no build step
 - **Vanilla JavaScript** — no React, no Vue, no jQuery
 - **Topological sort** — recalculation walks nodes in dependency order so downstream nodes always calculate after upstream nodes settle
-- **Coordinate systems** — the canvas uses a CSS `transform: translate() scale()` camera; node positions are in world space; SVG edges are drawn in screen space using `getBoundingClientRect()`
-- **Save format** — plain JSON, human-readable, easy to back up or version-control alongside a save file
+- **Demand-weighted splitting** — belt output is divided among consumers by demand ratio, not given to each consumer in full
+- **Coordinate systems** — the canvas uses a CSS `transform: translate() scale()` camera; node positions are in world space; SVG edges are drawn in screen space
+- **Save format** — plain JSON, human-readable, easy to back up or version-control
 
 ---
 
 ## Game Data Accuracy
 
-All numbers in this planner are sourced from the Dyson Sphere Program wiki, in-game measurements, and community-verified guides.
+All numbers are sourced from the Dyson Sphere Program wiki, in-game measurements, and community-verified guides.
 
 Key verified values:
-- Mining rate: **30 ore/min per vein** base, **+10% per VU level**
-- Energized Graphite burn rate: **24/min per thermal plant** at 100% load (6.75 MJ × 80% efficiency ÷ 2.16 MW)
+- Mining rate: 30 ore/min per vein base, +10% per VU level
+- Energized Graphite burn rate: 24/min per thermal plant at full load
 - Arc Smelter recipe times match in-game tooltip values
 - Assembler tier multipliers: 0.75 / 1.0 / 1.5
 - Belt capacities: 360 / 720 / 1800 per minute
 - Sorter speeds: 1.5 / 3 / 6 trips/sec at 1 square, halving per additional square
+- Fractionator: 1% of hydrogen throughput converts to deuterium per pass
+- Thermal Plant: 2.16 MW per plant at full fuel supply
+- Mini Fusion: 24 MW per plant at full deuteron rod supply
 
 ---
 
