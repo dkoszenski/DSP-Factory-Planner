@@ -2342,8 +2342,11 @@ var App = {
       return;
     }
     node.props[key] = val;
-    // If recipe changed on a multi-input machine, rebuild the node card entirely
-    // so ports update to reflect new ingredient list
+
+    // All node card rebuilds must happen BEFORE recalcAll so that the fresh
+    // node_stats div exists when updateNodeDisplay tries to write into it.
+
+    // Recipe changed on a multi-input machine: rebuild ports
     var multiInputTypes = ['arc_smelter', 'assembler', 'matrix_lab', 'oil_refinery', 'particle_collider'];
     if (key === 'recipe' && multiInputTypes.indexOf(node.type) !== -1) {
       var el = document.getElementById('node_' + nodeId);
@@ -2352,7 +2355,7 @@ var App = {
         this.bindNodeEvents(el, node);
       }
     }
-    // Rebuild mining node header when resource changes so output color updates
+    // Resource changed on a mining node: rebuild so border color updates
     if (key === 'resource' && node.type === 'mining') {
       var miningEl = document.getElementById('node_' + nodeId);
       if (miningEl) {
@@ -2360,23 +2363,26 @@ var App = {
         this.bindNodeEvents(miningEl, node);
       }
     }
-    this.recalcAll();
-    this.renderEdges();
-    if (State.tab === 'props' || State.tab === 'stats') {
-      this.renderSidebar();
-    }
-    // update node header if label or count changed
-    var headerEl = document.querySelector('#node_' + nodeId + ' .nh-title');
-    if (headerEl && key === 'label') {
-      headerEl.textContent = val || NODE_DEFS[node.type].label;
-    }
-    // Rebuild full header when count changes so count badge updates
+    // Count changed: rebuild header so badge updates
     if (key === 'count') {
       var nodeEl2 = document.getElementById('node_' + nodeId);
       if (nodeEl2) {
         nodeEl2.innerHTML = this.buildNodeHTML(node);
         this.bindNodeEvents(nodeEl2, node);
       }
+    }
+
+    // recalcAll must run after any innerHTML rebuilds so updateNodeDisplay
+    // can find and populate the freshly-created node_stats div
+    this.recalcAll();
+    this.renderEdges();
+    if (State.tab === 'props' || State.tab === 'stats') {
+      this.renderSidebar();
+    }
+    // Update node header text if label changed (no full rebuild needed for this)
+    var headerEl = document.querySelector('#node_' + nodeId + ' .nh-title');
+    if (headerEl && key === 'label') {
+      headerEl.textContent = val || NODE_DEFS[node.type].label;
     }
   },
 
