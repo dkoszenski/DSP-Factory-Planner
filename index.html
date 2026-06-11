@@ -1420,34 +1420,68 @@ var App = {
           return;
         }
 
-        // Multiple consumers — compute each consumer's demand for this item
-        // and split the source output proportionally
-        var totalDemand = 0;
-        var myDemand = 0;
-
-        consumerEdges.forEach(function(ce) {
-          var consumerNode = State.nodes[ce.to_node];
-          if (!consumerNode) {
-            return;
-          }
-          var demand = self.estimateDemand(consumerNode, ikey);
-          totalDemand += demand;
-          if (ce.to_node === id) {
-            myDemand += demand;
-          }
-        });
-
-        // Compute this node's share
         var myShare;
-        if (totalDemand <= 0) {
-          // No consumer has a computable demand — split evenly
-          myShare = srcOutput / consumerEdges.length;
-        } else if (totalDemand <= srcOutput) {
-          // Enough supply for everyone — each gets exactly what they need
-          myShare = Math.min(myDemand, srcOutput);
+        var srcNodeObj = State.nodes[e.from_node];
+
+        if (srcNodeObj && srcNodeObj.type === 'storage_tank') {
+          // Storage Tank: priority output — first consumer gets full sorter cap
+          // before any remainder reaches the next. Consumers are allocated in
+          // insertion order (edge id order = creation order).
+          var sortedEdges = consumerEdges.slice().sort(function(a, b) {
+            // Sort by numeric part of edge id to preserve creation order
+            var aNum = parseInt(a.id.replace('edge_', '')) || 0;
+            var bNum = parseInt(b.id.replace('edge_', '')) || 0;
+            return aNum - bNum;
+          });
+          var remaining = srcOutput;
+          var myEdgeIdx = -1;
+          for (var pei = 0; pei < sortedEdges.length; pei++) {
+            if (sortedEdges[pei].id === e.id) {
+              myEdgeIdx = pei;
+              break;
+            }
+          }
+          // Allocate to each prior consumer first
+          for (var pri = 0; pri < myEdgeIdx; pri++) {
+            var priNode = State.nodes[sortedEdges[pri].to_node];
+            var priDem = priNode ? self.estimateDemand(priNode, ikey) : 0;
+            var priAlloc = Math.min(priDem, remaining);
+            remaining -= priAlloc;
+            sortedEdges[pri].flow = priAlloc;
+          }
+          // This consumer gets whatever is left, up to its own demand
+          var myDemandTank = State.nodes[id] ? self.estimateDemand(State.nodes[id], ikey) : 0;
+          myShare = Math.min(myDemandTank, remaining);
+          // Remaining after this consumer (for subsequent ones — we won't set them here,
+          // they'll compute their own share when their inflowMap turn comes)
         } else {
-          // Contention — split proportionally by demand
-          myShare = (myDemand / totalDemand) * srcOutput;
+          // Standard proportional split (belts, storage_depot, and all other nodes)
+          var totalDemand = 0;
+          var myDemand = 0;
+
+          consumerEdges.forEach(function(ce) {
+            var consumerNode = State.nodes[ce.to_node];
+            if (!consumerNode) {
+              return;
+            }
+            var demand = self.estimateDemand(consumerNode, ikey);
+            totalDemand += demand;
+            if (ce.to_node === id) {
+              myDemand += demand;
+            }
+          });
+
+          // Compute this node's share
+          if (totalDemand <= 0) {
+            // No consumer has a computable demand — split evenly
+            myShare = srcOutput / consumerEdges.length;
+          } else if (totalDemand <= srcOutput) {
+            // Enough supply for everyone — each gets exactly what they need
+            myShare = Math.min(myDemand, srcOutput);
+          } else {
+            // Contention — split proportionally by demand
+            myShare = (myDemand / totalDemand) * srcOutput;
+          }
         }
 
         if (!inflowMap[ikey]) {
@@ -1517,6 +1551,27 @@ var App = {
       }
 
       def.calc(node, inflow, inflowMap);
+      self.updateNodeDisplay(node);
+    });
+
+    // Post-processing: storage nodes need actual outflow which is only
+    // known after all downstream nodes have been calculated.
+    // e.flow on each output edge is now correctly set, so sum those.
+    order.forEach(function(id) {
+      var node = State.nodes[id];
+      if (!node || (node.type !== 'storage_depot' && node.type !== 'storage_tank')) {
+        return;
+      }
+      var actualOut = 0;
+      State.edges.forEach(function(e) {
+        if (e.from_node === id) {
+          actualOut += (e.flow !== undefined) ? e.flow : 0;
+        }
+      });
+      if (node.computed) {
+        node.computed.actual_outflow = actualOut;
+        node.computed.net_flow = (node.computed.input_per_min || 0) - actualOut;
+      }
       self.updateNodeDisplay(node);
     });
   },
@@ -1733,38 +1788,30 @@ var App = {
       } else {
         html += '<div style="font-size:10px;color:var(--text3);padding:3px 0">No item set yet</div>';
       }
-      // Calculate total outflow demand from all downstream nodes
-      var totalOutflowDemand = 0;
-      State.edges.forEach(function(oe) {
-        if (oe.from_node === node.id) {
-          var downNode = State.nodes[oe.to_node];
-          if (downNode && downNode.computed) {
-            // What is the downstream actually receiving from this storage?
-            totalOutflowDemand += downNode.computed.input_per_min || 0;
-          }
-        }
-      });
-      var netFlow = c.input_per_min - totalOutflowDemand;
-      var isDraining = totalOutflowDemand > c.input_per_min + 0.01;
-      // Flow bar
+      // Use actual_outflow if available (set by post-processing pass after full recalc),
+      // otherwise fall back to output_per_min for the first render pass.
+      var actualOut = (c.actual_outflow !== undefined) ? c.actual_outflow : c.output_per_min;
+      var netFlow2 = (c.net_flow !== undefined) ? c.net_flow : (c.input_per_min - actualOut);
+      // In/Out row
       html += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#fff;margin-top:4px">';
       html += '<span>In: '+fmtRate(c.input_per_min)+'/min</span>';
-      html += '<span>Out: '+fmtRate(totalOutflowDemand)+'/min</span>';
+      html += '<span>Out: '+fmtRate(actualOut)+'/min</span>';
       html += '</div>';
-      // Net flow indicator
-      if (isDraining) {
-        html += '<div style="font-size:9px;color:#ef4444;margin-top:2px;padding:3px 6px;background:#2d0505;border-radius:4px;border:1px solid #ef4444">Draining: '+fmtRate(Math.abs(netFlow))+'/min faster than filling</div>';
-      } else if (netFlow > 0.01) {
-        html += '<div style="font-size:9px;color:#22c55e;margin-top:2px">Net fill: +'+fmtRate(netFlow)+'/min</div>';
-      } else {
+      // Net flow status
+      var capacityDrain = c.sorter_cap_out !== undefined && c.sorter_cap_out > c.input_per_min + 0.01;
+      if (Math.abs(netFlow2) < 0.5) {
         html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Balanced</div>';
+      } else if (netFlow2 > 0.5) {
+        html += '<div style="font-size:9px;color:#22c55e;margin-top:2px">Filling: +'+fmtRate(netFlow2)+'/min</div>';
+      } else {
+        html += '<div style="font-size:9px;color:#ef4444;margin-top:2px;padding:3px 6px;background:#2d0505;border-radius:4px;border:1px solid #ef4444">Draining: '+fmtRate(Math.abs(netFlow2))+'/min</div>';
       }
-      // Sorter cap indicators
-      if (c.sorter_cap_in !== undefined) {
-        html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Sorter in: '+fmtRate(c.sorter_cap_in)+'/min | out: '+fmtRate(c.sorter_cap_out)+'/min</div>';
+      // Warn if output sorter capacity exceeds input (depot will drain if pre-filled)
+      if (capacityDrain && Math.abs(netFlow2) < 0.5) {
+        html += '<div style="font-size:9px;color:#f59e0b;margin-top:2px">Output sorter cap ('+fmtRate(c.sorter_cap_out)+'/min) exceeds input</div>';
       }
       // Capacity note
-      html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Capacity: '+c.capacity.toLocaleString()+' items</div>';
+      html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Capacity: '+c.capacity.toLocaleString()+' items | Sorter: '+fmtRate(SORTER_SPEEDS[node.props.sorter_tier||"mk1"]*60/(node.props.sorter_reach||1))+'/min/slot</div>';
     } else if (node.type === 'thermal_plant' || node.type === 'mini_fusion') {
       var ec = (c.efficiency || 0) >= 90 ? '#22c55e' : (c.efficiency || 0) >= 50 ? '#f59e0b' : '#ef4444';
       var fuelItem = ITEMS[c.item_in] || null;
@@ -2410,19 +2457,15 @@ var App = {
       }
 
       if (node.type === 'storage_depot' || node.type === 'storage_tank') {
-        // Calculate outflow demand for this storage
-        var storageOutDemand = 0;
-        State.edges.forEach(function(se) {
-          if (se.from_node === node.id) {
-            var downN = State.nodes[se.to_node];
-            if (downN && downN.computed) {
-              storageOutDemand += downN.computed.input_per_min || 0;
-            }
-          }
-        });
-        if (storageOutDemand > c.input_per_min + 0.01) {
-          var drainRate = fmtRate(storageOutDemand - c.input_per_min);
-          alerts.push({type:'bad',nodeId:node.id,msg:label+': draining '+drainRate+'/min faster than filling'});
+        // Use actual_outflow which is correctly set by the post-processing pass
+        var actualStOut = (c.actual_outflow !== undefined) ? c.actual_outflow : c.output_per_min;
+        if (actualStOut > c.input_per_min + 0.5) {
+          var drainRateSt = fmtRate(actualStOut - c.input_per_min);
+          alerts.push({type:'bad',nodeId:node.id,msg:label+': draining '+drainRateSt+'/min faster than filling'});
+        }
+        // Warn if output sorter capacity exceeds input (could drain a pre-filled depot)
+        if (c.sorter_cap_out !== undefined && c.sorter_cap_out > c.input_per_min + 0.5 && Math.abs(actualStOut - c.input_per_min) < 0.5) {
+          alerts.push({type:'warn',nodeId:node.id,msg:label+': output sorter capacity ('+fmtRate(c.sorter_cap_out)+'/min) exceeds input rate — will drain if pre-filled'});
         }
       }
 
