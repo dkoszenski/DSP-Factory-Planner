@@ -691,12 +691,11 @@ var NODE_DEFS = {
   },
   storage_depot:{
     label:'Storage Depot',icon:'',color:'#78716c',
-    defaults:{tier:'mk1',item:null},
+    defaults:{tier:'mk1',item:null,sorter_tier:'mk1',sorter_reach:1},
     ports:{inputs:[],outputs:[]},
     calc:function(n,inflow,inflowMap){
       var item = n.props.item || null;
       if(!item){
-        // Try to detect item from inflowMap
         if(inflowMap){
           var ks=Object.keys(inflowMap);
           if(ks.length>0){item=ks[0];n.props.item=item;}
@@ -705,22 +704,34 @@ var NODE_DEFS = {
       if(!item){n.computed={output_per_min:0,input_per_min:0,item:null,error:'No item set'};return n.computed;}
       var caps={mk1:600,mk2:1200};
       var capacity=caps[n.props.tier]||600;
-      var totalIn=inflow||0;
-      // Sustainable output = what comes in (depot can buffer but not manufacture)
+      // Per-slot sorter throughput cap
+      var sorterCap=SORTER_SPEEDS[n.props.sorter_tier||'mk1']*60/(n.props.sorter_reach||1);
+      // Count actual connected input and output slots
+      var inputSlots=State.edges.filter(function(e){return e.to_node===n.id;}).length||1;
+      var outputSlots=State.edges.filter(function(e){return e.from_node===n.id;}).length||1;
+      var maxIn=sorterCap*inputSlots;
+      var maxOut=sorterCap*outputSlots;
+      var totalIn=Math.min(inflow||0, maxIn);
+      // Sustainable output is capped by both what comes in and output sorter capacity
+      var sustainableOut=Math.min(totalIn, maxOut);
       n.computed={
         input_per_min:totalIn,
-        output_per_min:totalIn,
+        output_per_min:sustainableOut,
+        max_input:maxIn,
+        max_output:maxOut,
         capacity:capacity,
         item:item,
         item_out:item,
-        tier:n.props.tier
+        tier:n.props.tier,
+        sorter_cap_in:maxIn,
+        sorter_cap_out:maxOut
       };
       return n.computed;
     }
   },
   storage_tank:{
     label:'Storage Tank',icon:'',color:'#44403c',
-    defaults:{tier:'mk1',item:null},
+    defaults:{tier:'mk1',item:null,sorter_tier:'mk1',sorter_reach:1},
     ports:{inputs:[],outputs:[]},
     calc:function(n,inflow,inflowMap){
       var item = n.props.item || null;
@@ -731,14 +742,24 @@ var NODE_DEFS = {
         }
       }
       if(!item){n.computed={output_per_min:0,input_per_min:0,item:null,error:'No item set'};return n.computed;}
-      var totalIn2=inflow||0;
+      var sorterCap2=SORTER_SPEEDS[n.props.sorter_tier||'mk1']*60/(n.props.sorter_reach||1);
+      var inputSlots2=State.edges.filter(function(e){return e.to_node===n.id;}).length||1;
+      var outputSlots2=State.edges.filter(function(e){return e.from_node===n.id;}).length||1;
+      var maxIn2=sorterCap2*inputSlots2;
+      var maxOut2=sorterCap2*outputSlots2;
+      var totalIn2=Math.min(inflow||0, maxIn2);
+      var sustainableOut2=Math.min(totalIn2, maxOut2);
       n.computed={
         input_per_min:totalIn2,
-        output_per_min:totalIn2,
+        output_per_min:sustainableOut2,
+        max_input:maxIn2,
+        max_output:maxOut2,
         capacity:10000,
         item:item,
         item_out:item,
-        tier:'mk1'
+        tier:'mk1',
+        sorter_cap_in:maxIn2,
+        sorter_cap_out:maxOut2
       };
       return n.computed;
     }
@@ -1213,10 +1234,11 @@ var App = {
       return BELT_CAPS[node.props.tier] || 360;
     }
 
-    // Storage nodes accept whatever arrives (up to an effectively unlimited internal capacity)
-    // For demand-splitting purposes, treat as a high-capacity belt
+    // Storage nodes: demand per connection = sorter cap per slot
+    // Each input connection has its own sorter, so demand = one slot's sorter throughput
     if (type === 'storage_depot' || type === 'storage_tank') {
-      return 1800; // Mk.III belt cap — storage accepts anything
+      var stSorterCap = SORTER_SPEEDS[node.props.sorter_tier || 'mk1'] * 60 / (node.props.sorter_reach || 1);
+      return stSorterCap;
     }
 
     // Assembler and arc smelter — demand based on recipe + sorter + count
@@ -1296,14 +1318,14 @@ var App = {
       return Math.min(2.7 * cnt5, inSorterCap5);
     }
 
-    // Fractionator — only hydrogen
+    // Fractionator — only hydrogen; demand is purely sorter-limited
     if (type === 'fractionator') {
       if (itemKey !== 'hydrogen') {
         return 0;
       }
       var cnt6 = node.props.count || 1;
       var inSorterCap6 = SORTER_SPEEDS[node.props.input_sorter_tier] * 60 / (node.props.input_sorter_reach || 1) * cnt6;
-      return Math.min(360 * cnt6, inSorterCap6);
+      return inSorterCap6;
     }
 
     // Generic consumer
@@ -1394,6 +1416,7 @@ var App = {
             inflowMap[ikey] = 0;
           }
           inflowMap[ikey] += srcOutput;
+          e.flow = srcOutput;  // store actual per-edge flow for pill display
           return;
         }
 
@@ -1431,6 +1454,7 @@ var App = {
           inflowMap[ikey] = 0;
         }
         inflowMap[ikey] += myShare;
+        e.flow = myShare;  // store actual per-edge flow for pill display
       });
       // upstream_item: array of all connected item types (for filtering)
       var upstream_items = Object.keys(inflowMap);
@@ -1735,6 +1759,10 @@ var App = {
       } else {
         html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Balanced</div>';
       }
+      // Sorter cap indicators
+      if (c.sorter_cap_in !== undefined) {
+        html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Sorter in: '+fmtRate(c.sorter_cap_in)+'/min | out: '+fmtRate(c.sorter_cap_out)+'/min</div>';
+      }
       // Capacity note
       html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Capacity: '+c.capacity.toLocaleString()+' items</div>';
     } else if (node.type === 'thermal_plant' || node.type === 'mini_fusion') {
@@ -1961,13 +1989,15 @@ var App = {
         var pillName = itemDef ? itemDef.name : (edgeItemKey || '');
         var pillRate = '';
 
-        if (outVal !== undefined && outVal > 0) {
+        // Use per-edge actual flow if stored; fall back to source total output
+        var edgeFlow = (edge.flow !== undefined) ? edge.flow : outVal;
+        if (edgeFlow !== undefined && edgeFlow > 0) {
           if (edgeItemKey === 'power') {
-            pillRate = fmtNum(outVal, 2) + ' MW';
+            pillRate = fmtNum(edgeFlow, 2) + ' MW';
             pillIcon = '';
             pillName = 'Power';
           } else {
-            pillRate = fmtRate(outVal) + '/min';
+            pillRate = fmtRate(edgeFlow) + '/min';
           }
         }
 
@@ -2225,10 +2255,18 @@ var App = {
         html += ' <button onclick="App.clearStorageItem(\''+node.id+'\')" style="margin-left:6px;font-size:10px;padding:1px 6px;background:var(--bg4);border:1px solid var(--border2);border-radius:3px;color:var(--text2);cursor:pointer">Clear</button>';
       }
       html += '</div>';
+      html += '<div class="prop-label" style="margin-top:8px">Sorter (all slots)</div>';
+      html += this.propSelect(node, 'sorter_tier', 'Tier', sorterOptions());
+      html += this.propSelect(node, 'sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
       if (node.computed && !node.computed.error) {
         var sc2 = node.computed;
         html += '<div class="prop-label" style="margin-top:8px">Storage Stats</div>';
         html += '<div class="prop-stat"><span>Input rate</span><strong>'+fmtRate(sc2.input_per_min)+'/min</strong></div>';
+        html += '<div class="prop-stat"><span>Output rate</span><strong>'+fmtRate(sc2.output_per_min)+'/min</strong></div>';
+        if (sc2.sorter_cap_in !== undefined) {
+          html += '<div class="prop-stat"><span>Sorter in cap</span><strong>'+fmtRate(sc2.sorter_cap_in)+'/min</strong></div>';
+          html += '<div class="prop-stat"><span>Sorter out cap</span><strong>'+fmtRate(sc2.sorter_cap_out)+'/min</strong></div>';
+        }
         html += '<div class="prop-stat"><span>Capacity</span><strong>'+sc2.capacity.toLocaleString()+' items</strong></div>';
       }
     } else if (node.type === 'generic_consumer') {
