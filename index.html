@@ -689,6 +689,60 @@ var NODE_DEFS = {
       return n.computed;
     }
   },
+  storage_depot:{
+    label:'Storage Depot',icon:'',color:'#78716c',
+    defaults:{tier:'mk1',item:null},
+    ports:{inputs:[],outputs:[]},
+    calc:function(n,inflow,inflowMap){
+      var item = n.props.item || null;
+      if(!item){
+        // Try to detect item from inflowMap
+        if(inflowMap){
+          var ks=Object.keys(inflowMap);
+          if(ks.length>0){item=ks[0];n.props.item=item;}
+        }
+      }
+      if(!item){n.computed={output_per_min:0,input_per_min:0,item:null,error:'No item set'};return n.computed;}
+      var caps={mk1:600,mk2:1200};
+      var capacity=caps[n.props.tier]||600;
+      var totalIn=inflow||0;
+      // Sustainable output = what comes in (depot can buffer but not manufacture)
+      n.computed={
+        input_per_min:totalIn,
+        output_per_min:totalIn,
+        capacity:capacity,
+        item:item,
+        item_out:item,
+        tier:n.props.tier
+      };
+      return n.computed;
+    }
+  },
+  storage_tank:{
+    label:'Storage Tank',icon:'',color:'#44403c',
+    defaults:{tier:'mk1',item:null},
+    ports:{inputs:[],outputs:[]},
+    calc:function(n,inflow,inflowMap){
+      var item = n.props.item || null;
+      if(!item){
+        if(inflowMap){
+          var ks2=Object.keys(inflowMap);
+          if(ks2.length>0){item=ks2[0];n.props.item=item;}
+        }
+      }
+      if(!item){n.computed={output_per_min:0,input_per_min:0,item:null,error:'No item set'};return n.computed;}
+      var totalIn2=inflow||0;
+      n.computed={
+        input_per_min:totalIn2,
+        output_per_min:totalIn2,
+        capacity:10000,
+        item:item,
+        item_out:item,
+        tier:'mk1'
+      };
+      return n.computed;
+    }
+  },
   generic_consumer:{
     label:'Consumer',icon:'',color:'#1f2937',
     defaults:{count:1,label:'Consumer',consumption_per_min:30,item:null,input_sorter_tier:'mk1',input_sorter_reach:1},
@@ -930,6 +984,21 @@ var App = {
       return null;
     }
 
+    // Storage depots and tanks: accept anything if no item set yet;
+    // reject if the incoming item doesn't match the stored item
+    if (toType === 'storage_depot' || toType === 'storage_tank') {
+      var storedItem = toNode.props.item;
+      if (!storedItem || storedItem === 'unknown') {
+        return null; // Not yet typed — accept anything
+      }
+      if (sourceItem !== storedItem) {
+        var srcNm = ITEMS[sourceItem] ? ITEMS[sourceItem].name : sourceItem;
+        var stoNm = ITEMS[storedItem] ? ITEMS[storedItem].name : storedItem;
+        return 'Storage contains ' + stoNm + ', not ' + srcNm;
+      }
+      return null;
+    }
+
     // Generic consumer — accepts anything
     if (toType === 'generic_consumer') {
       return null;
@@ -1034,43 +1103,60 @@ var App = {
   },
 
   addEdge: function(fromNode, fromPort, toNode, toPort) {
-    var toNodeDef = State.nodes[toNode] ? NODE_DEFS[State.nodes[toNode].type] : null;
-    var isMergeable = toNodeDef && (State.nodes[toNode].type === 'belt');
-    if (isMergeable) {
-      // Belts accept multiple inputs — assign a unique port slot each time
-      // Count how many input edges already exist on this belt
-      var existingInputs = State.edges.filter(function(e) {
-        return e.to_node === toNode;
+    var toNodeObj   = State.nodes[toNode];
+    var fromNodeObj = State.nodes[fromNode];
+    var toType   = toNodeObj   ? toNodeObj.type   : null;
+    var fromType = fromNodeObj ? fromNodeObj.type  : null;
+
+    var isStorageTypes = ['storage_depot','storage_tank'];
+    var isStorageTo   = isStorageTypes.indexOf(toType)   !== -1;
+    var isStorageFrom = isStorageTypes.indexOf(fromType) !== -1;
+    var isBeltTo      = toType === 'belt';
+
+    if (isBeltTo || isStorageTo) {
+      // Assign a unique in_N slot so multiple inputs can coexist
+      var usedInPorts = {};
+      State.edges.forEach(function(e) {
+        if (e.to_node === toNode) { usedInPorts[e.to_port] = true; }
       });
-      // Use a unique port id so we don't collide with existing connections
-      toPort = 'in_' + existingInputs.length;
-      // Make sure it's truly unique (in case of load/save ordering issues)
-      var usedPorts = {};
-      existingInputs.forEach(function(e) { usedPorts[e.to_port] = true; });
-      var slotIndex = 0;
-      while (usedPorts['in_' + slotIndex]) {
-        slotIndex++;
-      }
-      toPort = 'in_' + slotIndex;
+      var slotIdx = 0;
+      while (usedInPorts['in_' + slotIdx]) { slotIdx++; }
+      toPort = 'in_' + slotIdx;
     } else {
-      // All other nodes: one connection per input port (replace existing)
+      // Standard nodes: one connection per input port slot
       State.edges = State.edges.filter(function(e) {
         return !(e.to_node === toNode && e.to_port === toPort);
       });
     }
+
     State.edges.push({id:'edge_'+(State.nextId++),from_node:fromNode,from_port:fromPort,to_node:toNode,to_port:toPort});
-    // Rebuild belt node card so the new port appears
-    if (isMergeable) {
-      var beltEl = document.getElementById('node_' + toNode);
-      if (beltEl) {
-        beltEl.innerHTML = this.buildNodeHTML(State.nodes[toNode]);
-        this.bindNodeEvents(beltEl, State.nodes[toNode]);
+
+    // Auto-set storage item from connected source when item is null
+    if (isStorageTo && toNodeObj && !toNodeObj.props.item) {
+      if (fromNodeObj && fromNodeObj.computed) {
+        var srcItem = fromNodeObj.computed.item_out || fromNodeObj.computed.item || null;
+        if (srcItem && srcItem !== 'unknown') {
+          toNodeObj.props.item = srcItem;
+        }
       }
     }
+
+    // Rebuild node cards that have dynamic port layouts
+    var self = this;
+    function rebuildNode(nid) {
+      var nodeObj = State.nodes[nid];
+      var nodeEl  = document.getElementById('node_' + nid);
+      if (nodeObj && nodeEl) {
+        nodeEl.innerHTML = self.buildNodeHTML(nodeObj);
+        self.bindNodeEvents(nodeEl, nodeObj);
+      }
+    }
+    if (isBeltTo || isStorageTo)   { rebuildNode(toNode); }
+    if (isStorageFrom)              { rebuildNode(fromNode); }
+
     this.recalcAll();
     this.renderEdges();
-    // Re-render props so recipe dropdown updates to match upstream item
-    if (State.selected === toNode && State.tab === 'props') {
+    if (State.selected === toNode && (State.tab === 'props' || State.tab === 'stats')) {
       this.renderSidebar();
     }
   },
@@ -1088,14 +1174,23 @@ var App = {
       return e.id !== edgeId;
     });
     State.selectedEdge = null;
-    // If we removed an edge going INTO a belt, rebuild that belt's card
+    // Rebuild any dynamic-port node cards affected by this edge removal
     if (edgeToRemove) {
-      var toNode = State.nodes[edgeToRemove.to_node];
-      if (toNode && toNode.type === 'belt') {
-        var beltEl = document.getElementById('node_' + toNode.id);
-        if (beltEl) {
-          beltEl.innerHTML = this.buildNodeHTML(toNode);
-          this.bindNodeEvents(beltEl, toNode);
+      var dynTypes = ['belt','storage_depot','storage_tank'];
+      var toNodeDel   = State.nodes[edgeToRemove.to_node];
+      var fromNodeDel = State.nodes[edgeToRemove.from_node];
+      if (toNodeDel && dynTypes.indexOf(toNodeDel.type) !== -1) {
+        var toElDel = document.getElementById('node_' + toNodeDel.id);
+        if (toElDel) {
+          toElDel.innerHTML = this.buildNodeHTML(toNodeDel);
+          this.bindNodeEvents(toElDel, toNodeDel);
+        }
+      }
+      if (fromNodeDel && dynTypes.indexOf(fromNodeDel.type) !== -1) {
+        var fromElDel = document.getElementById('node_' + fromNodeDel.id);
+        if (fromElDel) {
+          fromElDel.innerHTML = this.buildNodeHTML(fromNodeDel);
+          this.bindNodeEvents(fromElDel, fromNodeDel);
         }
       }
     }
@@ -1116,6 +1211,12 @@ var App = {
     // Belts pass everything through up to their capacity — demand = belt capacity
     if (type === 'belt') {
       return BELT_CAPS[node.props.tier] || 360;
+    }
+
+    // Storage nodes accept whatever arrives (up to an effectively unlimited internal capacity)
+    // For demand-splitting purposes, treat as a high-capacity belt
+    if (type === 'storage_depot' || type === 'storage_tank') {
+      return 1800; // Mk.III belt cap — storage accepts anything
     }
 
     // Assembler and arc smelter — demand based on recipe + sorter + count
@@ -1477,6 +1578,53 @@ var App = {
         html += '<span class="port-label" style="font-size:10px;color:var(--text3)">+ in</span>';
       }
       html += '</div>';
+    } else if (node.type === 'storage_depot' || node.type === 'storage_tank') {
+      var maxPorts = node.type === 'storage_depot' ? 12 : 4;
+      // Gather occupied input and output edges for this node
+      var usedIn = {}, usedOut = {};
+      State.edges.forEach(function(e) {
+        if (e.to_node === node.id) { usedIn[e.to_port] = true; }
+        if (e.from_node === node.id) { usedOut[e.from_port] = true; }
+      });
+      var inKeys  = Object.keys(usedIn).sort();
+      var outKeys = Object.keys(usedOut).sort();
+      var totalUsed = inKeys.length + outKeys.length;
+      // Render occupied input ports
+      for (var si2 = 0; si2 < inKeys.length; si2++) {
+        html += '<div class="port-row">';
+        html += '<div class="port input connected" id="port_'+node.id+'_'+inKeys[si2]+'" data-node="'+node.id+'" data-port="'+inKeys[si2]+'" data-dir="in"></div>';
+        html += '<span class="port-label" style="font-size:10px">In '+(si2+1)+'</span>';
+        html += '</div>';
+      }
+      // Spare input port (if under max total)
+      if (totalUsed < maxPorts) {
+        var nextIn = 0;
+        while (usedIn['in_' + nextIn]) { nextIn++; }
+        html += '<div class="port-row">';
+        html += '<div class="port input" id="port_'+node.id+'_in_'+nextIn+'" data-node="'+node.id+'" data-port="in_'+nextIn+'" data-dir="in"></div>';
+        html += '<span class="port-label" style="font-size:10px;color:var(--text3)">'+(inKeys.length===0?'In':'+ in')+'</span>';
+        html += '</div>';
+      }
+      html += '<div id="node_stats_'+node.id+'"></div>';
+      // Render occupied output ports
+      for (var so2 = 0; so2 < outKeys.length; so2++) {
+        html += '<div class="port-row" style="justify-content:flex-end;gap:6px">';
+        html += '<span class="port-label" style="font-size:10px;flex:1;text-align:right;padding-right:4px">Out '+(so2+1)+'</span>';
+        html += '<div class="port output connected" id="port_'+node.id+'_'+outKeys[so2]+'" data-node="'+node.id+'" data-port="'+outKeys[so2]+'" data-dir="out" style="flex-shrink:0"></div>';
+        html += '</div>';
+      }
+      // Spare output port (if under max total)
+      if (totalUsed < maxPorts) {
+        var nextOut = 0;
+        while (usedOut['out_' + nextOut]) { nextOut++; }
+        html += '<div class="port-row" style="justify-content:flex-end;gap:6px">';
+        html += '<span class="port-label" style="font-size:10px;flex:1;text-align:right;padding-right:4px;color:var(--text3)">'+(outKeys.length===0?'Out':'+ out')+'</span>';
+        html += '<div class="port output" id="port_'+node.id+'_out_'+nextOut+'" data-node="'+node.id+'" data-port="out_'+nextOut+'" data-dir="out" style="flex-shrink:0"></div>';
+        html += '</div>';
+      }
+      // Skip the normal stats and output port rendering below — already done above
+      html += '</div>';
+      return html;
     } else if (def.ports.inputs.length > 0) {
       def.ports.inputs.forEach(function(port) {
         html += '<div class="port-row">';
@@ -1549,6 +1697,46 @@ var App = {
       if (c.input_per_min > c.capacity) {
         html += '<div style="font-size:9px;color:#ef4444;margin-top:2px">Overflow: '+fmtRate(c.input_per_min - c.capacity)+'/min lost</div>';
       }
+    } else if (node.type === 'storage_depot' || node.type === 'storage_tank') {
+      var sitem = c.item || node.props.item;
+      var sidef = sitem && ITEMS[sitem] ? ITEMS[sitem] : null;
+      var scolor = sidef ? sidef.color : '#6b7280';
+      // Item chip
+      if (sidef) {
+        html += '<div style="display:flex;align-items:center;gap:5px;margin:3px 0 2px;padding:3px 7px;background:'+scolor+'22;border:1px solid '+scolor+'55;border-radius:6px">';
+        html += '<span style="font-size:10px;color:#fff">'+sidef.name+'</span>';
+        html += '</div>';
+      } else {
+        html += '<div style="font-size:10px;color:var(--text3);padding:3px 0">No item set yet</div>';
+      }
+      // Calculate total outflow demand from all downstream nodes
+      var totalOutflowDemand = 0;
+      State.edges.forEach(function(oe) {
+        if (oe.from_node === node.id) {
+          var downNode = State.nodes[oe.to_node];
+          if (downNode && downNode.computed) {
+            // What is the downstream actually receiving from this storage?
+            totalOutflowDemand += downNode.computed.input_per_min || 0;
+          }
+        }
+      });
+      var netFlow = c.input_per_min - totalOutflowDemand;
+      var isDraining = totalOutflowDemand > c.input_per_min + 0.01;
+      // Flow bar
+      html += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#fff;margin-top:4px">';
+      html += '<span>In: '+fmtRate(c.input_per_min)+'/min</span>';
+      html += '<span>Out: '+fmtRate(totalOutflowDemand)+'/min</span>';
+      html += '</div>';
+      // Net flow indicator
+      if (isDraining) {
+        html += '<div style="font-size:9px;color:#ef4444;margin-top:2px;padding:3px 6px;background:#2d0505;border-radius:4px;border:1px solid #ef4444">Draining: '+fmtRate(Math.abs(netFlow))+'/min faster than filling</div>';
+      } else if (netFlow > 0.01) {
+        html += '<div style="font-size:9px;color:#22c55e;margin-top:2px">Net fill: +'+fmtRate(netFlow)+'/min</div>';
+      } else {
+        html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Balanced</div>';
+      }
+      // Capacity note
+      html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Capacity: '+c.capacity.toLocaleString()+' items</div>';
     } else if (node.type === 'thermal_plant' || node.type === 'mini_fusion') {
       var ec = (c.efficiency || 0) >= 90 ? '#22c55e' : (c.efficiency || 0) >= 50 ? '#f59e0b' : '#ef4444';
       var fuelItem = ITEMS[c.item_in] || null;
@@ -2022,6 +2210,27 @@ var App = {
       html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
+    } else if (node.type === 'storage_depot' || node.type === 'storage_tank') {
+      html += this.propText(node, 'label', 'Name');
+      if (node.type === 'storage_depot') {
+        html += this.propSelect(node, 'tier', 'Tier', [
+          {v:'mk1', l:'Mk.I (600 capacity)'},
+          {v:'mk2', l:'Mk.II (1,200 capacity)'}
+        ]);
+      }
+      var stItem = node.props.item;
+      var stItemName = stItem && ITEMS[stItem] ? ITEMS[stItem].name : (stItem || 'Not set yet');
+      html += '<div class="prop-row"><label>Item</label><span style="color:var(--text2);font-size:11px">'+stItemName+'</span>';
+      if (stItem) {
+        html += ' <button onclick="App.clearStorageItem(\''+node.id+'\')" style="margin-left:6px;font-size:10px;padding:1px 6px;background:var(--bg4);border:1px solid var(--border2);border-radius:3px;color:var(--text2);cursor:pointer">Clear</button>';
+      }
+      html += '</div>';
+      if (node.computed && !node.computed.error) {
+        var sc2 = node.computed;
+        html += '<div class="prop-label" style="margin-top:8px">Storage Stats</div>';
+        html += '<div class="prop-stat"><span>Input rate</span><strong>'+fmtRate(sc2.input_per_min)+'/min</strong></div>';
+        html += '<div class="prop-stat"><span>Capacity</span><strong>'+sc2.capacity.toLocaleString()+' items</strong></div>';
+      }
     } else if (node.type === 'generic_consumer') {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
@@ -2160,6 +2369,23 @@ var App = {
         alerts.push({type:'bad',nodeId:node.id,msg:label+': belt SATURATED ('+c.load_pct+'% loaded — items backing up!)'});
       } else if (node.type === 'belt' && c.load_pct > 85) {
         alerts.push({type:'warn',nodeId:node.id,msg:label+': belt near capacity ('+c.load_pct+'%)'});
+      }
+
+      if (node.type === 'storage_depot' || node.type === 'storage_tank') {
+        // Calculate outflow demand for this storage
+        var storageOutDemand = 0;
+        State.edges.forEach(function(se) {
+          if (se.from_node === node.id) {
+            var downN = State.nodes[se.to_node];
+            if (downN && downN.computed) {
+              storageOutDemand += downN.computed.input_per_min || 0;
+            }
+          }
+        });
+        if (storageOutDemand > c.input_per_min + 0.01) {
+          var drainRate = fmtRate(storageOutDemand - c.input_per_min);
+          alerts.push({type:'bad',nodeId:node.id,msg:label+': draining '+drainRate+'/min faster than filling'});
+        }
       }
 
       if (c.input_sorter_cap !== undefined && c.input_per_min > c.input_sorter_cap * 1.05) {
@@ -2430,6 +2656,22 @@ var App = {
   },
 
   //  SELECTION 
+
+  clearStorageItem: function(nodeId) {
+    var node = State.nodes[nodeId];
+    if (!node) {
+      return;
+    }
+    node.props.item = null;
+    var nodeEl = document.getElementById('node_' + nodeId);
+    if (nodeEl) {
+      nodeEl.innerHTML = this.buildNodeHTML(node);
+      this.bindNodeEvents(nodeEl, node);
+    }
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
 
   focusNode: function(id) {
     var node = State.nodes[id];
