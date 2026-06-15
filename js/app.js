@@ -301,11 +301,6 @@ var App = {
       var slotIdx = 0;
       while (usedInPorts['in_' + slotIdx]) { slotIdx++; }
       toPort = 'in_' + slotIdx;
-    } else {
-      // Standard nodes: one connection per input port slot
-      State.edges = State.edges.filter(function(e) {
-        return !(e.to_node === toNode && e.to_port === toPort);
-      });
     }
 
     State.edges.push({id:'edge_'+(State.nextId++),from_node:fromNode,from_port:fromPort,to_node:toNode,to_port:toPort});
@@ -3588,21 +3583,18 @@ var App = {
   renderPlanetBar: function() {
     var bar = document.getElementById('planet-bar');
     if (!bar) { return; }
-    if (State.planets.length === 0) {
-      bar.style.display = 'none';
-      bar.innerHTML = '';
-      return;
-    }
     bar.style.display = 'flex';
     var cur = State.currentPlanet;
     var html = '<span style="font-size:11px;color:var(--text3);flex-shrink:0;margin-right:2px">Planets:</span>';
-    html += '<span class="planet-chip'+(cur==='all'?' active':'')+'" onclick="App.setPlanet(\'all\')">All</span>';
-    for (var i = 0; i < State.planets.length; i++) {
-      var name = State.planets[i];
-      html += '<span class="planet-chip'+(cur===name?' active':'')+'" onclick="App.setPlanetByIndex('+i+')">';
-      html += escHtml(name);
-      html += ' <span style="opacity:0.55;font-size:13px;line-height:1;cursor:pointer" onclick="event.stopPropagation();App.deletePlanetByIndex('+i+')">&times;</span>';
-      html += '</span>';
+    if (State.planets.length > 0) {
+      html += '<span class="planet-chip'+(cur==='all'?' active':'')+'" onclick="App.setPlanet(\'all\')">All</span>';
+      for (var i = 0; i < State.planets.length; i++) {
+        var name = State.planets[i];
+        html += '<span class="planet-chip'+(cur===name?' active':'')+'" onclick="App.setPlanetByIndex('+i+')">';
+        html += escHtml(name);
+        html += ' <span style="opacity:0.55;font-size:13px;line-height:1;cursor:pointer" onclick="event.stopPropagation();App.deletePlanetByIndex('+i+')">&times;</span>';
+        html += '</span>';
+      }
     }
     html += '<button class="btn" style="font-size:11px;padding:3px 8px;flex-shrink:0" onclick="App.addPlanet()">+ Planet</button>';
     bar.innerHTML = html;
