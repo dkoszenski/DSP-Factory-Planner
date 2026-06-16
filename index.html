@@ -19,6 +19,7 @@
     <button class="btn" onclick="App.loadFromFile()">Load</button>
     <button class="btn" onclick="App.resetView()">Fit view</button>
     <button class="btn" onclick="App.shareURL()">Share link</button>
+    <button class="btn" onclick="App.importBlueprint()">Import Blueprint</button>
     <button class="btn danger" onclick="App.clearAll()">Clear all</button>
     <input type="file" id="file-input" accept=".json" style="display:none" onchange="App.onFileLoad(event)">
   </div>
@@ -52,6 +53,25 @@
 
 <div id="context-menu" class="context-menu" style="display:none"></div>
 <div id="tooltip" class="tooltip" style="display:none"></div>
+
+<div id="blueprint-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.78);z-index:2000;align-items:center;justify-content:center" onclick="if(event.target===this)App.closeBlueprintModal()">
+  <div style="background:#0f1117;border:1px solid #3b82f6;border-radius:10px;padding:24px;width:600px;max-width:90vw;box-shadow:0 25px 60px rgba(0,0,0,0.85)">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+      <span style="font-size:20px">📋</span>
+      <span style="color:#93c5fd;font-size:15px;font-weight:600">Import DSP Blueprint</span>
+    </div>
+    <p style="color:#94a3b8;font-size:12px;margin:0 0 12px 0;line-height:1.6">
+      In Dyson Sphere Program, select buildings with the Blueprint Tool and copy the blueprint string.
+      Paste it below — production buildings will be created as calculator nodes.
+    </p>
+    <textarea id="blueprint-textarea" rows="7" style="width:100%;background:#1a2035;border:1px solid #374151;border-radius:6px;color:#e2e8f0;font-family:monospace;font-size:11px;padding:10px;resize:vertical;box-sizing:border-box;outline:none" placeholder="BLUEPRINT:0,10,0,...H4sIAAAAA...==XXXXXXXX"></textarea>
+    <div id="blueprint-error" style="display:none;color:#ef4444;font-size:12px;margin-top:8px;padding:7px 10px;background:#2d0505;border-radius:4px;border:1px solid #7f1d1d"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">
+      <button class="btn" onclick="App.closeBlueprintModal()">Cancel</button>
+      <button class="btn" style="background:#1e3a8a;border-color:#3b82f6" onclick="App.submitBlueprint(document.getElementById('blueprint-textarea').value)">Import</button>
+    </div>
+  </div>
+</div>
 
 <script type="module" src="js/main.js"></script>
 </body>

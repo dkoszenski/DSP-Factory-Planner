@@ -3,6 +3,7 @@ import { ITEMS, RECIPES, BELT_CAPS, SORTER_SPEEDS, CHAIN_RAW_RESOURCES, PREFERRE
 import { State } from './state.js';
 import { calcMultiInputMachine, NODE_DEFS } from './calc.js';
 import { fmtRate, fmtNum, rateClass, statRow, statRow2, escHtml, itemName, itemOptions, recipeOptions, sorterOptions } from './helpers.js';
+import { parseBlueprintString, DSP_ITEM_TO_NODE, DSP_ASSEMBLER_TIER, DSP_RECIPE_TO_KEY } from './blueprint.js';
 var App = {
 
   init: function() {
@@ -3670,6 +3671,145 @@ var App = {
     this.renderPlanetBar();
     this.renderEdges();
     this.renderSidebar();
+  },
+
+  importBlueprint: function() {
+    var modal = document.getElementById('blueprint-modal');
+    document.getElementById('blueprint-textarea').value = '';
+    document.getElementById('blueprint-error').style.display = 'none';
+    modal.style.display = 'flex';
+    document.getElementById('blueprint-textarea').focus();
+  },
+
+  closeBlueprintModal: function() {
+    document.getElementById('blueprint-modal').style.display = 'none';
+  },
+
+  submitBlueprint: function(str) {
+    var self = this;
+    var errorEl = document.getElementById('blueprint-error');
+    errorEl.style.display = 'none';
+    str = (str || '').trim();
+    if (!str) {
+      errorEl.textContent = 'Please paste a blueprint string.';
+      errorEl.style.display = 'block';
+      return;
+    }
+    parseBlueprintString(str).then(function(buildings) {
+      self.closeBlueprintModal();
+      self.applyBlueprintData(buildings);
+    }, function(err) {
+      errorEl.textContent = 'Error: ' + err.message;
+      errorEl.style.display = 'block';
+    });
+  },
+
+  applyBlueprintData: function(buildings) {
+    var self = this;
+
+    // Aggregate buildings into groups by (nodeType, recipeKey, assemblerTier)
+    var groups = {};
+    for (var i = 0; i < buildings.length; i++) {
+      var b = buildings[i];
+      var nodeType = DSP_ITEM_TO_NODE[b.itemId];
+      if (!nodeType || nodeType === 'belt') { continue; }
+
+      var recipeKey = (b.recipeId > 0) ? (DSP_RECIPE_TO_KEY[b.recipeId] || null) : null;
+      var tier = DSP_ASSEMBLER_TIER[b.itemId] || null;
+      var groupKey = nodeType + '|' + (recipeKey || '') + '|' + (tier || '');
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {nodeType: nodeType, recipeKey: recipeKey, tier: tier, count: 0, sumX: 0, sumY: 0};
+      }
+      groups[groupKey].count++;
+      groups[groupKey].sumX += (b.localOffX || 0);
+      groups[groupKey].sumY += (b.localOffZ || 0);
+    }
+
+    var keys = Object.keys(groups);
+    if (keys.length === 0) {
+      self.showToast('No supported production buildings found in blueprint.');
+      return;
+    }
+
+    // Compute per-group centroid positions
+    var centroids = [];
+    for (var gi = 0; gi < keys.length; gi++) {
+      var g = groups[keys[gi]];
+      centroids.push({x: g.sumX / g.count, y: g.sumY / g.count, group: g});
+    }
+
+    // Find bounding box of DSP centroids
+    var minX = centroids[0].x, maxX = centroids[0].x;
+    var minY = centroids[0].y, maxY = centroids[0].y;
+    for (var ci = 1; ci < centroids.length; ci++) {
+      if (centroids[ci].x < minX) { minX = centroids[ci].x; }
+      if (centroids[ci].x > maxX) { maxX = centroids[ci].x; }
+      if (centroids[ci].y < minY) { minY = centroids[ci].y; }
+      if (centroids[ci].y > maxY) { maxY = centroids[ci].y; }
+    }
+
+    // Scale DSP coords to canvas coords
+    var dsRange = Math.max(maxX - minX, maxY - minY, 1);
+    var targetSpread = Math.min(keys.length * 180, 1400);
+    var scale = targetSpread / dsRange;
+    scale = Math.max(120, Math.min(scale, 500));
+    var midX = (minX + maxX) / 2;
+    var midY = (minY + maxY) / 2;
+    var originX = 300;
+    var originY = 300;
+
+    for (var qi = 0; qi < centroids.length; qi++) {
+      var c = centroids[qi];
+      var nx = originX + (c.x - midX) * scale;
+      var ny = originY + (c.y - midY) * scale;
+      var grp = c.group;
+      var propsOverride = {};
+
+      if (grp.nodeType === 'mining') {
+        var miners = [];
+        for (var mi = 0; mi < grp.count; mi++) { miners.push({veins: 1}); }
+        propsOverride.miners = miners;
+
+      } else if (grp.nodeType === 'assembler') {
+        propsOverride.count = grp.count;
+        if (grp.tier) { propsOverride.tier = grp.tier; }
+        if (grp.recipeKey && RECIPES[grp.recipeKey] && RECIPES[grp.recipeKey].machine === 'assembler') {
+          propsOverride.recipe = grp.recipeKey;
+        }
+
+      } else if (grp.nodeType === 'chemical_plant') {
+        propsOverride.count = grp.count;
+        if (grp.recipeKey) {
+          var cRec = RECIPES[grp.recipeKey];
+          if (cRec && cRec.machine === 'chemical_plant') {
+            propsOverride.item_in      = cRec.inputs[0].item;
+            propsOverride.item_out     = cRec.outputs[0].item;
+            propsOverride.recipe_time  = cRec.time;
+            propsOverride.input_qty    = cRec.inputs[0].qty;
+            propsOverride.output_qty   = cRec.outputs[0].qty;
+          }
+        }
+
+      } else {
+        propsOverride.count = grp.count;
+        // For recipe-driven machines validate that the recipe machine type matches
+        if (grp.recipeKey) {
+          var rec = RECIPES[grp.recipeKey];
+          if (rec && rec.machine === grp.nodeType) {
+            propsOverride.recipe = grp.recipeKey;
+          }
+        }
+      }
+
+      self.addNodeRaw(grp.nodeType, {x: nx, y: ny}, propsOverride);
+    }
+
+    self.recalcAll();
+    self.renderEdges();
+    self.renderSidebar();
+    self.resetView();
+    self.showToast('Imported ' + keys.length + ' node group' + (keys.length !== 1 ? 's' : '') + ' from blueprint (' + buildings.length + ' buildings)');
   }
 };
 
