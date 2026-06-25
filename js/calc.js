@@ -1,12 +1,9 @@
-﻿// ES Module: core calculation logic and node definitions
+﻿// node definitions and calc functions
 import { ITEMS, RECIPES, BELT_CAPS, SORTER_SPEEDS } from './data.js';
 import { State } from './state.js';
-//  SHARED MULTI-INPUT MACHINE CALCULATOR 
-// Used by arc_smelter and assembler. Handles any recipe with 1-N inputs.
-// Each input slot has its own sorter throughput cap. The limiting input
-// (the one with the worst supply:demand ratio) determines actual output rate.
-// inflowMap: {itemKey: rate_per_min} — what's actually arriving per item.
-// speedMult: assembler tier multiplier (1.0 for smelters).
+// multi-input machine calc (arc smelter + assembler)
+// the input with the worst supply/demand ratio caps the output
+// inflowMap: {itemKey: rate_per_min}, speedMult: assembler tier multiplier
 function calcMultiInputMachine(n, inflowMap, speedMult) {
   var rec = RECIPES[n.props.recipe];
   if (!rec) {
@@ -30,13 +27,11 @@ function calcMultiInputMachine(n, inflowMap, speedMult) {
   var outputQty = rec.outputs[0].qty;
   var maxOutputByMachines = outputQty / effectiveTime * 60 * cnt * prolifOutputMult;
 
-  // Per-input sorter cap (all inputs share the same sorter settings for now)
   var inSorterCapPerItem = SORTER_SPEEDS[n.props.input_sorter_tier] * 60 / (n.props.input_sorter_reach || 1) * cnt;
 
-  // For each recipe input, find: need_per_min, available_per_min, fill_ratio
-  // The bottleneck is the input with the lowest fill_ratio
+  // find the fill ratio for each input; the lowest one is the bottleneck
   var inputDetails = [];
-  var bottleneckRatio = 1.0; // 1.0 = fully fed
+  var bottleneckRatio = 1.0; // 1.0 means fully fed
 
   for (var ii = 0; ii < rec.inputs.length; ii++) {
     var inp = rec.inputs[ii];
@@ -57,12 +52,12 @@ function calcMultiInputMachine(n, inflowMap, speedMult) {
     }
   }
 
-  // Output is scaled by the bottleneck ratio
+  // output scales with the bottleneck
   var rawOutput = maxOutputByMachines * bottleneckRatio;
   var outputAfterSorter = Math.min(rawOutput, outSorterCap);
   var efficiency = maxOutputByMachines > 0 ? Math.round(outputAfterSorter / maxOutputByMachines * 100) : 0;
 
-  // Total inflow for display
+  // total inflow for display
   var totalInflow = 0;
   if (inflowMap) {
     var ikeys = Object.keys(inflowMap);
@@ -111,19 +106,17 @@ var NODE_DEFS = {
     ports:{inputs:[],outputs:[{id:'out',label:'Out',item:'any'}]},
     calc:function(n,inflow,inflowMap){
       var cap=BELT_CAPS[n.props.tier]||360;
-      // Total inflow is the sum of all connected upstream outputs (already in scalar inflow)
       var totalIn = inflow || 0;
       var actual = Math.min(totalIn, cap);
       var pct = cap > 0 ? actual / cap : 0;
-      // Determine what item this belt carries:
-      // If all inputs are the same item, use that. If mixed, use the dominant one.
+      // if multiple items feed in, use the one with the highest rate
       var dominantItem = n.upstream_item || 'unknown';
       if (inflowMap) {
         var ikeys = Object.keys(inflowMap);
         if (ikeys.length === 1) {
           dominantItem = ikeys[0];
         } else if (ikeys.length > 1) {
-          // Pick the item with the highest flow rate
+          // pick the item with the highest rate
           var maxRate = -1;
           for (var ik = 0; ik < ikeys.length; ik++) {
             if (inflowMap[ikeys[ik]] > maxRate) {
@@ -242,15 +235,12 @@ var NODE_DEFS = {
       if(!item){n.computed={output_per_min:0,input_per_min:0,item:null,error:'No item set'};return n.computed;}
       var caps={mk1:600,mk2:1200};
       var capacity=caps[n.props.tier]||600;
-      // Per-slot sorter throughput cap
       var sorterCap=SORTER_SPEEDS[n.props.sorter_tier||'mk1']*60/(n.props.sorter_reach||1);
-      // Count actual connected input and output slots
       var inputSlots=State.edges.filter(function(e){return e.to_node===n.id;}).length||1;
       var outputSlots=State.edges.filter(function(e){return e.from_node===n.id;}).length||1;
       var maxIn=sorterCap*inputSlots;
       var maxOut=sorterCap*outputSlots;
       var totalIn=Math.min(inflow||0, maxIn);
-      // Sustainable output is capped by both what comes in and output sorter capacity
       var sustainableOut=Math.min(totalIn, maxOut);
       n.computed={
         input_per_min:totalIn,
@@ -345,7 +335,7 @@ var NODE_DEFS = {
       var outSorterCap=SORTER_SPEEDS[n.props.output_sorter_tier]*60/n.props.output_sorter_reach*cnt;
       var fractionRate=0.01;
       var effectiveInput=Math.min(inflow||0,inSorterCap);
-      var rawOut=effectiveInput*fractionRate;  // cnt already baked into inSorterCap
+      var rawOut=effectiveInput*fractionRate; // cnt is baked into inSorterCap above
       var outputAfterSorter=Math.min(rawOut,outSorterCap);
       n.computed={
         input_per_min:inflow||0,effective_input:effectiveInput,

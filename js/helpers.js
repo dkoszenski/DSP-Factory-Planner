@@ -1,6 +1,5 @@
-﻿// ES Module: helper functions
+﻿// helper functions
 import { ITEMS, RECIPES } from './data.js';
-//  HELPERS
 
 function fmtRate(v) {
   if (v === undefined || v === null) {
@@ -49,11 +48,8 @@ function itemOptions() {
   });
 }
 
-// upstreamItems: array of item keys connected to this node (from node.upstream_items)
-// If provided, only show recipes where EVERY upstream item appears in the recipe's inputs.
-// This means: "I have iron_ore coming in AND copper_ore coming in → show recipes needing both"
+// if upstreamItems is given, only show recipes that use all of those items as inputs
 function recipeOptions(machineType, upstreamItems) {
-  // Normalize to array
   var filterItems = [];
   if (upstreamItems) {
     if (Array.isArray(upstreamItems)) {
@@ -62,7 +58,7 @@ function recipeOptions(machineType, upstreamItems) {
       filterItems = [upstreamItems];
     }
   }
-  // Remove any filter items that are not meaningful
+  // strip out non-item values
   filterItems = filterItems.filter(function(fi) {
     return fi && fi !== 'unknown' && fi !== 'custom' && fi !== 'power';
   });
@@ -91,8 +87,7 @@ function recipeOptions(machineType, upstreamItems) {
     return true;
   }).map(function(k) {
     var r = RECIPES[k];
-    // 'name' is the bare recipe label used for search matching
-    // 'l' is the full display string shown in the dropdown
+    // name is used for search, l is the full dropdown string
     return {
       v: k,
       name: r.label,

@@ -1,4 +1,4 @@
-﻿// ES Module: App controller
+﻿// App controller
 import { ITEMS, RECIPES, BELT_CAPS, SORTER_SPEEDS, CHAIN_RAW_RESOURCES, PREFERRED_RECIPES, TECH_REQUIREMENTS, BuildState } from './data.js';
 import { State } from './state.js';
 import { calcMultiInputMachine, NODE_DEFS } from './calc.js';
@@ -160,7 +160,7 @@ var App = {
     if (toType === 'storage_depot' || toType === 'storage_tank') {
       var storedItem = toNode.props.item;
       if (!storedItem || storedItem === 'unknown') {
-        return null; // Not yet typed — accept anything
+        return null; // not yet typed, accept anything
       }
       if (sourceItem !== storedItem) {
         var srcNm = ITEMS[sourceItem] ? ITEMS[sourceItem].name : sourceItem;
@@ -170,22 +170,22 @@ var App = {
       return null;
     }
 
-    // Generic consumer — accepts anything
+    // generic consumer: accepts anything
     if (toType === 'generic_consumer') {
       return null;
     }
 
-    // Water pump / oil extractor — no inputs at all, shouldn't be a target
+    // water pump / oil extractor: no inputs, can't be a connection target
     if (toType === 'water_pump' || toType === 'oil_extractor') {
       return 'This node has no inputs';
     }
 
-    // Mining node — no inputs
+    // mining: no inputs
     if (toType === 'mining') {
       return 'Mining nodes have no inputs';
     }
 
-    // Thermal plant — accepts only fuel items
+    // thermal plant: accepts fuel items
     if (toType === 'thermal_plant') {
       var validFuels = ['coal','energetic_graphite','hydrogen','refined_oil','fire_ice','plant_fuel','wood','b_conveyor_mk1'];
       // Actually any item can physically be fed, the plant just burns it.
@@ -196,7 +196,7 @@ var App = {
       return null;
     }
 
-    // Mini fusion — only accepts deuteron fuel rods
+    // mini fusion: only deuteron fuel rods
     if (toType === 'mini_fusion') {
       if (sourceItem !== 'deuteron_fuel_rod') {
         var srcName = (State.nodes[fromNodeId] && ITEMS[sourceItem]) ? ITEMS[sourceItem].name : sourceItem;
@@ -205,7 +205,7 @@ var App = {
       return null;
     }
 
-    // Fractionator — only hydrogen
+    // fractionator: only hydrogen
     if (toType === 'fractionator') {
       if (sourceItem !== 'hydrogen') {
         var srcName2 = ITEMS[sourceItem] ? ITEMS[sourceItem].name : sourceItem;
@@ -214,7 +214,7 @@ var App = {
       return null;
     }
 
-    // PLS / ILS station — only accept input when in export (sink) mode
+    // PLS / ILS: only accept input in export (sink) mode
     if (toType === 'pls_station' || toType === 'ils_station') {
       if ((toNode.props.mode || 'import') === 'import') {
         var stationType = toType === 'pls_station' ? 'PLS' : 'ILS';
@@ -223,8 +223,8 @@ var App = {
       return null;
     }
 
-    // Arc smelter, assembler, oil refinery, particle collider, matrix lab, chemical_plant
-    // — check against recipe inputs
+    // arc smelter, assembler, oil refinery, particle collider, matrix lab, chemical plant
+    // check against recipe inputs
     var recipeNodeTypes = ['arc_smelter','assembler','oil_refinery','particle_collider','matrix_lab'];
     if (recipeNodeTypes.indexOf(toType) !== -1) {
       var rec = RECIPES[toNode.props.recipe];
@@ -232,7 +232,7 @@ var App = {
         return null; // No recipe set yet, allow connection
       }
 
-      // For multi-input nodes, toPort is 'in_N' — check that specific slot
+      // for multi-input nodes, toPort is 'in_N': check that specific slot
       var portIndex = -1;
       var portMatch = toPort.match(/^in_(\d+)$/);
       if (portMatch) {
@@ -267,7 +267,7 @@ var App = {
       return null;
     }
 
-    // Chemical plant — if it has item_in set, validate against it
+    // chemical plant: if item_in is set, validate against it
     if (toType === 'chemical_plant') {
       var expectedIn = toNode.props.item_in;
       if (expectedIn && expectedIn !== 'custom' && sourceItem !== expectedIn) {
@@ -374,16 +374,16 @@ var App = {
     this.renderSidebar();
   },
 
-  // Estimate how much of a given item a node demands per minute.
-  // Used for proportional belt-splitting when multiple consumers share one source.
-  // Does NOT rely on node.computed — reads props and recipe directly.
+  // estimate how much of a given item a node demands per minute.
+  // used for proportional belt-splitting when multiple consumers share one source.
+  // reads props and recipe directly, does not use node.computed.
   estimateDemand: function(node, itemKey) {
     if (!node) {
       return 0;
     }
     var type = node.type;
 
-    // Belts pass everything through up to their capacity — demand = belt capacity
+    // belts: demand equals belt capacity
     if (type === 'belt') {
       return BELT_CAPS[node.props.tier] || 360;
     }
@@ -395,7 +395,7 @@ var App = {
       return stSorterCap;
     }
 
-    // Assembler and arc smelter — demand based on recipe + sorter + count
+    // assembler and arc smelter: demand from recipe + sorter + count
     if (type === 'assembler' || type === 'arc_smelter') {
       var rec = RECIPES[node.props.recipe];
       if (!rec) {
@@ -422,7 +422,7 @@ var App = {
       return 0;
     }
 
-    // Oil refinery, particle collider, matrix lab — same recipe-based demand
+    // oil refinery, particle collider, matrix lab: same recipe-based demand
     if (type === 'oil_refinery' || type === 'particle_collider' || type === 'matrix_lab') {
       var rec2 = RECIPES[node.props.recipe];
       if (!rec2) {
@@ -452,7 +452,7 @@ var App = {
       return Math.min(needPerMin3, inSorterCap3);
     }
 
-    // Thermal plant — demand based on fuel type and count
+    // thermal plant: demand by fuel type and count
     if (type === 'thermal_plant') {
       if (node.props.fuel !== itemKey) {
         return 0;
@@ -464,7 +464,7 @@ var App = {
       return Math.min(fuelRate * cnt4, inSorterCap4);
     }
 
-    // Mini fusion — only deuteron fuel rods
+    // mini fusion: only deuteron fuel rods
     if (type === 'mini_fusion') {
       if (itemKey !== 'deuteron_fuel_rod') {
         return 0;
@@ -475,7 +475,7 @@ var App = {
       return Math.min(2.7 * cnt5, inSorterCap5);
     }
 
-    // Fractionator — only hydrogen; demand is purely sorter-limited
+    // fractionator: hydrogen only, sorter-limited
     if (type === 'fractionator') {
       if (itemKey !== 'hydrogen') {
         return 0;
@@ -581,9 +581,8 @@ var App = {
         var srcNodeObj = State.nodes[e.from_node];
 
         if (srcNodeObj && srcNodeObj.type === 'storage_tank') {
-          // Storage Tank: priority output — first consumer gets full sorter cap
-          // before any remainder reaches the next. Consumers are allocated in
-          // insertion order (edge id order = creation order).
+          // storage tank: first consumer gets full sorter cap before remainder
+          // goes to the next. consumers are allocated in insertion order.
           var sortedEdges = consumerEdges.slice().sort(function(a, b) {
             // Sort by numeric part of edge id to preserve creation order
             var aNum = parseInt(a.id.replace('edge_', '')) || 0;
@@ -609,8 +608,7 @@ var App = {
           // This consumer gets whatever is left, up to its own demand
           var myDemandTank = State.nodes[id] ? self.estimateDemand(State.nodes[id], ikey) : 0;
           myShare = Math.min(myDemandTank, remaining);
-          // Remaining after this consumer (for subsequent ones — we won't set them here,
-          // they'll compute their own share when their inflowMap turn comes)
+          // remaining after this consumer; subsequent ones compute their own share
         } else {
           // Standard proportional split (belts, storage_depot, and all other nodes)
           var totalDemand = 0;
@@ -630,13 +628,13 @@ var App = {
 
           // Compute this node's share
           if (totalDemand <= 0) {
-            // No consumer has a computable demand — split evenly
+            // no consumer has a computable demand, split evenly
             myShare = srcOutput / consumerEdges.length;
           } else if (totalDemand <= srcOutput) {
-            // Enough supply for everyone — each gets exactly what they need
+            // enough supply for everyone, each gets what they need
             myShare = Math.min(myDemand, srcOutput);
           } else {
-            // Contention — split proportionally by demand
+            // contention: split proportionally by demand
             myShare = (myDemand / totalDemand) * srcOutput;
           }
         }
@@ -658,8 +656,8 @@ var App = {
         inflow += inflowMap[allItemKeys[fk]];
       }
 
-      // Auto-fix recipe if the single connected item doesn't match the current recipe
-      // Only triggers on single-input connections — we don't override a deliberate multi-input setup
+      // auto-fix recipe if the single connected item doesn't match the current recipe
+      // only triggers on single-input connections, won't override a deliberate multi-input setup
       var recipeNodeTypes = ['arc_smelter','assembler','oil_refinery','particle_collider','matrix_lab'];
       var isRecipeNode = recipeNodeTypes.indexOf(node.type) !== -1;
       if (isRecipeNode && upstream_items.length === 1) {
@@ -733,7 +731,7 @@ var App = {
     });
   },
 
-  //  RENDERING 
+  // rendering
 
   renderNode: function(node) {
     var def = NODE_DEFS[node.type];
@@ -862,7 +860,7 @@ var App = {
         html += '<div class="port output" id="port_'+node.id+'_out_'+nextOut+'" data-node="'+node.id+'" data-port="out_'+nextOut+'" data-dir="out" style="flex-shrink:0"></div>';
         html += '</div>';
       }
-      // Skip the normal stats and output port rendering below — already done above
+      // skip normal stats and output port rendering, already done above
       html += '</div>';
       return html;
     } else if (def.ports.inputs.length > 0) {
@@ -915,7 +913,7 @@ var App = {
       var bicon = bidef ? bidef.icon : '';
       var bpct = c.load_pct || 0;
       var bclass = bpct <= 80 ? '#22c55e' : bpct <= 100 ? '#f59e0b' : '#ef4444';
-      // Item chip — shows source count if >1
+      // item chip: shows source count if >1
       if (bidef) {
         html += '<div style="display:flex;align-items:center;gap:5px;margin:3px 0 2px;padding:3px 7px;background:'+bcolor+'22;border:1px solid '+bcolor+'55;border-radius:6px">';
         html += '<span style="font-size:12px">'+bicon+'</span>';
@@ -1338,7 +1336,7 @@ var App = {
     }
   },
 
-  //  SIDEBAR 
+  // sidebar
 
   switchTab: function(tab) {
     State.tab = tab;
@@ -2068,7 +2066,7 @@ var App = {
     return html;
   },
 
-  //  BUILD TAB
+  // build tab
 
   buildBuildPanelHTML: function() {
     // Collect unique craftable output items from RECIPES (exclude raw resources)
@@ -2308,7 +2306,7 @@ var App = {
     if (resultEl) { resultEl.innerHTML = summaryHtml; }
   },
 
-  //  PROP HELPERS
+  // prop helpers
 
   propText: function(node, key, label) {
     var val = node.props[key] || '';
@@ -2567,7 +2565,7 @@ var App = {
     this.renderSidebar();
   },
 
-  //  SELECTION 
+  // selection
 
   clearStorageItem: function(nodeId) {
     var node = State.nodes[nodeId];
@@ -2629,8 +2627,8 @@ var App = {
     State.selectedEdge = null;
     State.tab = 'props';
 
-    // Apply the glow highlight to the node immediately — the element exists in the
-    // canvas DOM and is not affected by sidebar re-renders
+    // apply the glow highlight immediately; the element lives in the canvas DOM
+    // and is not affected by sidebar re-renders
     var el = document.getElementById('node_' + id);
     if (el) {
       el.classList.add('selected');
@@ -2780,7 +2778,7 @@ var App = {
       }
     });
     if (Object.keys(State.multiSelected).length === 1) {
-      // Only one node caught — convert to single selection
+      // only one node caught, convert to single selection
       var onlyId = Object.keys(State.multiSelected)[0];
       State.multiSelected = {};
       var onlyEl = document.getElementById('node_' + onlyId);
@@ -2793,7 +2791,7 @@ var App = {
     }
   },
 
-  //  CANVAS EVENTS 
+  // canvas events
 
   bindCanvas: function() {
     var self = this;
@@ -2801,7 +2799,7 @@ var App = {
     var isPanning = false;
     var panStart = null;
 
-    // Show edge pill label on hover — write to State.hoveredEdge so renderEdges can restore it
+    // show edge pill label on hover; write to State.hoveredEdge so renderEdges can restore it
     var edgeSvg = document.getElementById('edge-svg');
     edgeSvg.style.pointerEvents = 'all';
     edgeSvg.addEventListener('mousemove', function(e) {
@@ -3058,8 +3056,8 @@ var App = {
 
       var multiIds = Object.keys(State.multiSelected);
       if (multiIds.length > 0 && State.multiSelected[node.id]) {
-        // Clicked a node that's already in the multi-selection → start multi-drag
-        // Record start positions for ALL selected nodes
+        // clicked a node already in the multi-selection: start multi-drag
+        // record start positions for all selected nodes
         var starts = {};
         for (var si = 0; si < multiIds.length; si++) {
           var sn = State.nodes[multiIds[si]];
@@ -3162,7 +3160,7 @@ var App = {
     });
   },
 
-  //  CAMERA 
+  // camera
 
   zoom: function(factor) {
     // Zoom from center of viewport (used by +/- buttons)
@@ -3235,7 +3233,7 @@ var App = {
     document.getElementById('zoom-label').textContent = Math.round(zoom * 100) + '%';
   },
 
-  //  CONTEXT MENU 
+  // context menu
 
   showContextMenu: function(e, items) {
     var menu = document.getElementById('context-menu');
@@ -3265,7 +3263,7 @@ var App = {
     menu.style.top = top + 'px';
 
     var actions = items;
-    // Use mousedown on items — fires before the document mousedown close handler
+    // use mousedown on items: fires before the document mousedown close handler
     menu.querySelectorAll('.cm-item').forEach(function(itemEl) {
       itemEl.addEventListener('mousedown', function(ev) {
         ev.stopPropagation();
@@ -3291,7 +3289,7 @@ var App = {
     }, 0);
   },
 
-  //  RENDER LOOP 
+  // render loop
 
   scheduleRender: function() {
     var self = this;
@@ -3300,7 +3298,7 @@ var App = {
     }, 100);
   },
 
-  //  RESEARCH GOAL
+  // research goal
 
   setResearchGoal: function(key) {
     State.researchGoal = key || null;
@@ -3334,7 +3332,7 @@ var App = {
     this.renderSidebar();
   },
 
-  //  SAVE / LOAD
+  // save / load
 
   saveToFile: function() {
     var data = {nodes: State.nodes, edges: State.edges, nextId: State.nextId, planets: State.planets};
@@ -3813,7 +3811,7 @@ var App = {
   }
 };
 
-//  CHAIN BUILDER HELPERS
+// chain builder helpers
 
 function findRecipeByOutput(itemKey) {
   if (PREFERRED_RECIPES[itemKey] && RECIPES[PREFERRED_RECIPES[itemKey]]) {
@@ -3846,19 +3844,19 @@ function getDepth(node) {
 }
 
 function buildChainTree(itemKey, targetRate, assemblerTier, sorterTier) {
-  // Special leaf: water → water_pump (50/min per pump at VU0)
+  // water goes to a water_pump (50/min per pump at VU0)
   if (itemKey === 'water') {
     var count = Math.ceil(targetRate / 50);
     return {nodeType:'water_pump', props:{count:count, vu_level:0},
             inputs:[], actualOutput:count*50, item:'water', chemExtraInputs:null};
   }
-  // Special leaf: crude_oil → oil_extractor (40/min per extractor at VU0)
+  // crude oil goes to an oil_extractor (40/min per extractor at VU0)
   if (itemKey === 'crude_oil') {
     var count = Math.ceil(targetRate / 40);
     return {nodeType:'oil_extractor', props:{count:count, rate_per_extractor:40, vu_level:0},
             inputs:[], actualOutput:count*40, item:'crude_oil', chemExtraInputs:null};
   }
-  // Explicit raw resources → mining node (30/min per vein at VU0)
+  // raw resources go to a mining node (30/min per vein at VU0)
   if (CHAIN_RAW_RESOURCES[itemKey]) {
     var veins = Math.ceil(targetRate / 30);
     return {nodeType:'mining', props:{resource:itemKey, miners:[{veins:veins}], vu_level:0},

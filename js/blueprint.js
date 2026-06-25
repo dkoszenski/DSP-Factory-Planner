@@ -1,5 +1,4 @@
-// Blueprint import: parse DSP blueprint strings into a list of building objects
-// ES5-style: var, no arrow functions, no template literals
+// parse DSP blueprint strings into a list of buildings
 
 var DSP_ITEM_TO_NODE = {
   2001: 'belt', 2002: 'belt', 2003: 'belt',
@@ -20,7 +19,7 @@ var DSP_ITEM_TO_NODE = {
   2901: 'matrix_lab', 2902: 'matrix_lab'
 };
 
-// Maps DSP item IDs for assemblers to the assembler tier prop value
+// assembler item ID to tier
 var DSP_ASSEMBLER_TIER = {
   2303: 'mk1',
   2304: 'mk2',
@@ -97,14 +96,14 @@ var DSP_RECIPE_TO_KEY = {
   133: 'combustible_unit'
 };
 
-// Finds the gzip base64 block and strips the trailing 8-char MD5F hash
+// find the gzip payload and strip the trailing 8-char hash
 function extractBase64(str) {
   str = str.replace(/\s+$/, '');
   var tail = str.slice(-8);
   if (/^[0-9A-Fa-f]{8}$/.test(tail)) {
     str = str.slice(0, -8);
   }
-  // H4sI is the base64 encoding of the gzip magic bytes \x1f\x8b\x08
+  // H4sI is always the start of base64-encoded gzip data
   var idx = str.indexOf('H4sI');
   if (idx === -1) {
     throw new Error('Could not find gzip data in blueprint string. Make sure you copied the full blueprint.');
@@ -116,9 +115,8 @@ function parseBinary(buffer) {
   var view = new DataView(buffer);
   var off = 0;
 
-  // Header: version(4) cursorOffX(4) cursorOffY(4) cursorTargetArea(4)
-  //         dragBoxSizeX(4) dragBoxSizeY(4) primaryAreaIdx(4) areaCount(1)
-  off += 4 + 4 + 4 + 4 + 4 + 4 + 4; // 28 bytes
+  // skip 7 int32 header fields (28 bytes), then read areaCount
+  off += 4 + 4 + 4 + 4 + 4 + 4 + 4;
   var areaCount = view.getInt8(off); off += 1;
 
   // Each area is 14 bytes
@@ -132,7 +130,7 @@ function parseBinary(buffer) {
     off += 1; // areaIndex (int8)
 
     var localOffX = view.getFloat32(off, true); off += 4;
-    off += 4; // localOffY (height, skip)
+    off += 4; // localOffY (height, not needed)
     var localOffZ = view.getFloat32(off, true); off += 4;
     off += 4 + 4 + 4; // localOff2 XYZ
     off += 4 + 4;     // yaw, yaw2

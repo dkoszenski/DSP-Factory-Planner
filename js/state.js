@@ -1,11 +1,11 @@
-﻿// ES Module: application state
+﻿// app state
 
 var State = {
   nodes: {},
   edges: [],
   selected: null,
   selectedEdge: null,
-  hoveredEdge: null,     // edge id currently under the mouse cursor (for pill visibility)
+  hoveredEdge: null,     // edge under the mouse (shows pill label)
   multiSelected: {},     // {id: true} for multi-selection
   marquee: null,         // {startX,startY,curX,curY} canvas-space
   multiDragging: null,   // {startMouseX,startMouseY, starts:{id:{x,y}}}

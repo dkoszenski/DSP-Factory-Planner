@@ -1,5 +1,4 @@
-﻿// ES Module: static data — ITEMS, RECIPES, BELT_CAPS, SORTER_SPEEDS, chain/recipe constants, TECH_REQUIREMENTS
-//  DATA 
+﻿// static data: items, recipes, belt caps, sorter speeds, tech requirements
 
 var ITEMS = {
   // Ores
@@ -155,7 +154,7 @@ var ITEMS = {
 }
 
 var RECIPES = {
-  // === ARC SMELTER / PLANE SMELTER / NEGENTROPY SMELTER ===
+  // arc smelter / plane smelter / negentropy smelter
   iron_ingot:       {label:'Iron Ingot',inputs:[{item:'iron_ore',qty:1}],outputs:[{item:'iron_ingot',qty:1}],time:1,machine:'arc_smelter'},
   copper_ingot:     {label:'Copper Ingot',inputs:[{item:'copper_ore',qty:1}],outputs:[{item:'copper_ingot',qty:1}],time:1,machine:'arc_smelter'},
   stone_brick:      {label:'Stone Brick',inputs:[{item:'stone_ore',qty:1}],outputs:[{item:'stone_brick',qty:1}],time:1,machine:'arc_smelter'},
@@ -171,7 +170,7 @@ var RECIPES = {
   titanium_ingot:   {label:'Titanium Ingot',inputs:[{item:'titanium_ore',qty:2}],outputs:[{item:'titanium_ingot',qty:1}],time:2,machine:'arc_smelter'},
   titanium_alloy:   {label:'Titanium Alloy',inputs:[{item:'titanium_ingot',qty:4},{item:'steel',qty:4},{item:'sulfuric_acid',qty:8}],outputs:[{item:'titanium_alloy',qty:4}],time:12,machine:'arc_smelter'},
   silicon_ore_from_stone:{label:'Silicon Ore (from Stone)',inputs:[{item:'stone_ore',qty:10}],outputs:[{item:'silicon_ore',qty:1}],time:10,machine:'arc_smelter'},
-  // === ASSEMBLER (all tiers) ===
+  // assembler
   gear:             {label:'Gear',inputs:[{item:'iron_ingot',qty:1}],outputs:[{item:'gear',qty:1}],time:1,machine:'assembler'},
   magnetic_coil:    {label:'Magnetic Coil',inputs:[{item:'magnet',qty:2},{item:'copper_ingot',qty:1}],outputs:[{item:'magnetic_coil',qty:2}],time:1,machine:'assembler'},
   circuit_board:    {label:'Circuit Board',inputs:[{item:'iron_ingot',qty:2},{item:'copper_ingot',qty:1}],outputs:[{item:'circuit_board',qty:2}],time:1,machine:'assembler'},
@@ -213,11 +212,11 @@ var RECIPES = {
   proliferator_mk1: {label:'Proliferator Mk.I',inputs:[{item:'coal',qty:1}],outputs:[{item:'proliferator_mk1',qty:1}],time:0.5,machine:'assembler'},
   proliferator_mk2: {label:'Proliferator Mk.II',inputs:[{item:'proliferator_mk1',qty:2},{item:'diamond',qty:1}],outputs:[{item:'proliferator_mk2',qty:1}],time:1,machine:'assembler'},
   proliferator_mk3: {label:'Proliferator Mk.III',inputs:[{item:'proliferator_mk2',qty:2},{item:'carbon_nanotube',qty:1}],outputs:[{item:'proliferator_mk3',qty:1}],time:2,machine:'assembler'},
-  // === OIL REFINERY ===
+  // oil refinery
   plasma_refining:  {label:'Plasma Refining',inputs:[{item:'crude_oil',qty:2}],outputs:[{item:'refined_oil',qty:2},{item:'hydrogen',qty:1}],time:4,machine:'oil_refinery'},
   xray_cracking:    {label:'X-Ray Cracking',inputs:[{item:'refined_oil',qty:1},{item:'hydrogen',qty:2}],outputs:[{item:'hydrogen',qty:3},{item:'energetic_graphite',qty:1}],time:4,machine:'oil_refinery'},
   reformed_refining:{label:'Reformed Refining',inputs:[{item:'refined_oil',qty:2},{item:'hydrogen',qty:1},{item:'coal',qty:2}],outputs:[{item:'refined_oil',qty:3}],time:4,machine:'oil_refinery'},
-  // === CHEMICAL PLANT / QUANTUM CHEMICAL PLANT ===
+  // chemical plant
   plastic:          {label:'Plastic',inputs:[{item:'refined_oil',qty:2},{item:'energetic_graphite',qty:1}],outputs:[{item:'plastic',qty:1}],time:3,machine:'chemical_plant'},
   graphene:         {label:'Graphene',inputs:[{item:'energetic_graphite',qty:3},{item:'sulfuric_acid',qty:1}],outputs:[{item:'graphene',qty:2}],time:3,machine:'chemical_plant'},
   graphene_fire_ice:{label:'Graphene (Fire Ice)',inputs:[{item:'fire_ice',qty:2}],outputs:[{item:'graphene',qty:2},{item:'hydrogen',qty:1}],time:2,machine:'chemical_plant'},
@@ -226,18 +225,18 @@ var RECIPES = {
   organic_crystal:  {label:'Organic Crystal',inputs:[{item:'plastic',qty:2},{item:'refined_oil',qty:1},{item:'water',qty:1}],outputs:[{item:'organic_crystal',qty:1}],time:6,machine:'chemical_plant'},
   organic_crystal_raw:{label:'Organic Crystal (Raw ore)',inputs:[{item:'organic_crystal_raw',qty:1}],outputs:[{item:'organic_crystal',qty:1}],time:6,machine:'chemical_plant'},
   sulfuric_acid:    {label:'Sulfuric Acid',inputs:[{item:'stone_ore',qty:6},{item:'refined_oil',qty:4},{item:'water',qty:4}],outputs:[{item:'sulfuric_acid',qty:4}],time:6,machine:'chemical_plant'},
-  // === MINIATURE PARTICLE COLLIDER ===
+  // particle collider
   deuterium:        {label:'Deuterium',inputs:[{item:'hydrogen',qty:10}],outputs:[{item:'deuterium',qty:5}],time:2.5,machine:'particle_collider'},
   antimatter:       {label:'Antimatter',inputs:[{item:'critical_photon',qty:2}],outputs:[{item:'antimatter',qty:2},{item:'hydrogen',qty:2}],time:2,machine:'particle_collider'},
   strange_matter:   {label:'Strange Matter',inputs:[{item:'iron_ingot',qty:2},{item:'deuterium',qty:10},{item:'particle_container',qty:2}],outputs:[{item:'strange_matter',qty:1}],time:8,machine:'particle_collider'},
-  // === MATRIX LAB ===
+  // matrix lab
   em_matrix:        {label:'Electromagnetic Matrix',inputs:[{item:'magnetic_coil',qty:1},{item:'circuit_board',qty:1}],outputs:[{item:'em_matrix',qty:1}],time:3,machine:'matrix_lab'},
   energy_matrix:    {label:'Energy Matrix',inputs:[{item:'energetic_graphite',qty:2},{item:'hydrogen',qty:2}],outputs:[{item:'energy_matrix',qty:1}],time:6,machine:'matrix_lab'},
   structure_matrix: {label:'Structure Matrix',inputs:[{item:'diamond',qty:1},{item:'titanium_crystal',qty:1}],outputs:[{item:'structure_matrix',qty:1}],time:8,machine:'matrix_lab'},
   information_matrix:{label:'Information Matrix',inputs:[{item:'processor',qty:2},{item:'particle_broadband',qty:1}],outputs:[{item:'information_matrix',qty:1}],time:10,machine:'matrix_lab'},
   gravity_matrix:   {label:'Gravity Matrix',inputs:[{item:'graviton_lens',qty:1},{item:'quantum_chip',qty:1}],outputs:[{item:'gravity_matrix',qty:1}],time:24,machine:'matrix_lab'},
   universe_matrix:  {label:'Universe Matrix',inputs:[{item:'em_matrix',qty:1},{item:'energy_matrix',qty:1},{item:'structure_matrix',qty:1},{item:'information_matrix',qty:1},{item:'gravity_matrix',qty:1},{item:'antimatter',qty:1}],outputs:[{item:'universe_matrix',qty:1}],time:15,machine:'matrix_lab'},
-  // === BUILDINGS (assembled in Assembler) ===
+  // buildings
   // Logistics & Storage
   b_conveyor_mk1:   {label:'Conveyor Belt Mk.I',inputs:[{item:'iron_ingot',qty:2},{item:'gear',qty:1}],outputs:[{item:'b_conveyor_mk1',qty:3}],time:1,machine:'assembler'},
   b_conveyor_mk2:   {label:'Conveyor Belt Mk.II',inputs:[{item:'b_conveyor_mk1',qty:3},{item:'em_turbine',qty:1}],outputs:[{item:'b_conveyor_mk2',qty:3}],time:1,machine:'assembler'},
@@ -329,7 +328,7 @@ var BuildState = {
 var SORTER_SPEEDS = {mk1:1.5,mk2:3,mk3:6};
 
 var TECH_REQUIREMENTS = [
-  // Early game — EM Matrix (Blue) only
+  // early game (blue matrix only)
   {key:'em_basic',        name:'Electromagnetic Matrix',        costs:{em_matrix:10}},
   {key:'basic_auto',      name:'Basic Automation',              costs:{em_matrix:40}},
   {key:'drive_engine',    name:'Drive Engine',                  costs:{em_matrix:40}},
@@ -340,26 +339,26 @@ var TECH_REQUIREMENTS = [
   {key:'applied_super',   name:'Applied Superconductor',        costs:{em_matrix:160}},
   {key:'particle_broad',  name:'Particle Broadband Conductor',  costs:{em_matrix:160}},
   {key:'grav_refract',    name:'Gravity Wave Refraction',       costs:{em_matrix:400}},
-  // Mid game — EM + Energy Matrix (Red)
+  // mid game (blue + red)
   {key:'energy_matrix',   name:'Energy Matrix',                 costs:{em_matrix:100, energy_matrix:200}},
   {key:'xray_crack',      name:'X-Ray Cracking',                costs:{em_matrix:100, energy_matrix:200}},
   {key:'hi_strength_exp', name:'High-Strength Explosive',       costs:{em_matrix:200, energy_matrix:100}},
   {key:'gas_giant_ext',   name:'Gas Giant Extraction',          costs:{em_matrix:200, energy_matrix:200}},
   {key:'adv_chem',        name:'Advanced Chemistry',            costs:{em_matrix:200, energy_matrix:200}},
   {key:'ion_thruster',    name:'Ion Thrusters',                 costs:{em_matrix:400, energy_matrix:400}},
-  // Mid-late — EM + Energy + Structure Matrix (Yellow)
+  // mid-late (blue + red + yellow)
   {key:'struct_matrix',   name:'Structure Matrix',              costs:{em_matrix:100, energy_matrix:200, structure_matrix:200}},
   {key:'particle_coll',   name:'Particle Collider Tech',        costs:{em_matrix:400, energy_matrix:400, structure_matrix:200}},
   {key:'nuclear_fusion',  name:'Controlled Nuclear Fusion',     costs:{em_matrix:400, energy_matrix:400, structure_matrix:400}},
   {key:'assembler_mk3',   name:'Assembler Mk.III',              costs:{em_matrix:400, energy_matrix:400, structure_matrix:400}},
   {key:'plane_smelter',   name:'Plane Smelter',                 costs:{em_matrix:400, energy_matrix:400, structure_matrix:400}},
-  // Late game — all 4 (+ Information Matrix, Purple)
+  // late game (+ purple)
   {key:'info_matrix',     name:'Information Matrix',            costs:{em_matrix:200, energy_matrix:200, structure_matrix:200, information_matrix:400}},
   {key:'dyson_sphere',    name:'Dyson Sphere System',           costs:{em_matrix:400, energy_matrix:400, structure_matrix:400, information_matrix:400}},
   {key:'pls_tech',        name:'Planetary Logistics System',    costs:{em_matrix:400, energy_matrix:400, structure_matrix:400, information_matrix:400}},
   {key:'ils_tech',        name:'Interstellar Logistics System', costs:{em_matrix:1000, energy_matrix:1000, structure_matrix:1000, information_matrix:1000}},
   {key:'quantum_chip',    name:'Quantum Chip Production',       costs:{em_matrix:400, energy_matrix:400, structure_matrix:400, information_matrix:400}},
-  // End game — all 5 (+ Gravity Matrix, Green)
+  // end game (+ green)
   {key:'grav_matrix',     name:'Gravity Matrix',                costs:{em_matrix:400, energy_matrix:400, structure_matrix:400, information_matrix:400, gravity_matrix:400}},
   {key:'mass_energy',     name:'Mass-Energy Storage',           costs:{em_matrix:1000, energy_matrix:1000, structure_matrix:1000, information_matrix:1000, gravity_matrix:1000}},
   {key:'virtual_reality', name:'Virtual Reality',               costs:{em_matrix:2000, energy_matrix:2000, structure_matrix:2000, information_matrix:2000, gravity_matrix:2000}},
