@@ -472,7 +472,16 @@ var NODE_DEFS = {
       var rate=(n.props.rate||0)*cnt;
       var item=n.props.item||null;
       if(mode==='import'){
-        n.computed={item_out:item,output_per_min:rate,power_draw_mw:0.600*cnt};
+        var supply=rate;
+        var ilsSup=State._ilsSupply;
+        if(ilsSup&&item&&ilsSup[item]!==undefined){
+          var totalExp=ilsSup[item]||0;
+          var totalDem=0;
+          var nkeys=Object.keys(State.nodes);
+          for(var i=0;i<nkeys.length;i++){var nd=State.nodes[nkeys[i]];if((nd.type==='pls_station'||nd.type==='ils_station')&&nd.props.mode==='import'&&nd.props.item===item){totalDem+=(nd.props.rate||0)*(nd.props.count||1);}}
+          supply=totalDem>0?Math.min(rate,(rate/totalDem)*totalExp):0;
+        }
+        n.computed={item_out:item,output_per_min:supply,power_draw_mw:0.600*cnt,ils_supply:ilsSup&&item?ilsSup[item]||0:undefined};
       } else {
         var demand=rate;
         var actual=Math.min(inflow||0,demand);
@@ -492,7 +501,16 @@ var NODE_DEFS = {
       var rate=(n.props.rate||0)*cnt;
       var item=n.props.item||null;
       if(mode==='import'){
-        n.computed={item_out:item,output_per_min:rate,power_draw_mw:1.000*cnt};
+        var supply=rate;
+        var ilsSup=State._ilsSupply;
+        if(ilsSup&&item&&ilsSup[item]!==undefined){
+          var totalExp=ilsSup[item]||0;
+          var totalDem=0;
+          var nkeys=Object.keys(State.nodes);
+          for(var i=0;i<nkeys.length;i++){var nd=State.nodes[nkeys[i]];if((nd.type==='pls_station'||nd.type==='ils_station')&&nd.props.mode==='import'&&nd.props.item===item){totalDem+=(nd.props.rate||0)*(nd.props.count||1);}}
+          supply=totalDem>0?Math.min(rate,(rate/totalDem)*totalExp):0;
+        }
+        n.computed={item_out:item,output_per_min:supply,power_draw_mw:1.000*cnt,ils_supply:ilsSup&&item?ilsSup[item]||0:undefined};
       } else {
         var demand=rate;
         var actual=Math.min(inflow||0,demand);

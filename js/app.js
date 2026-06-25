@@ -4,6 +4,75 @@ import { State } from './state.js';
 import { calcMultiInputMachine, NODE_DEFS } from './calc.js';
 import { fmtRate, fmtNum, rateClass, statRow, statRow2, escHtml, itemName, itemOptions, recipeOptions, sorterOptions } from './helpers.js';
 import { parseBlueprintString, DSP_ITEM_TO_NODE, DSP_ASSEMBLER_TIER, DSP_RECIPE_TO_KEY } from './blueprint.js';
+
+var EXAMPLE_FACTORIES = [
+  {
+    name: 'Magnetic Coil Line',
+    icon: '&#x2697;&#xFE0F;',
+    desc: '5 nodes — Iron ore + Copper ore → Magnets + Copper Ingots → Magnetic Coils',
+    nodes: {
+      '1':{id:'1',type:'mining',x:80,y:160,props:{resource:'iron_ore',miners:[{veins:6}],vu_level:0},computed:{}},
+      '2':{id:'2',type:'mining',x:80,y:380,props:{resource:'copper_ore',miners:[{veins:4}],vu_level:0},computed:{}},
+      '3':{id:'3',type:'arc_smelter',x:320,y:160,props:{count:3,recipe:'magnet',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '4':{id:'4',type:'arc_smelter',x:320,y:380,props:{count:1,recipe:'copper_ingot',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '5':{id:'5',type:'assembler',x:560,y:270,props:{count:1,recipe:'magnetic_coil',tier:'mk2',input_sorter_tier:'mk2',input_sorter_reach:1,output_sorter_tier:'mk2',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}}
+    },
+    edges:[
+      {id:'e1',from_node:'1',from_port:'out',to_node:'3',to_port:'in_0'},
+      {id:'e2',from_node:'2',from_port:'out',to_node:'4',to_port:'in_0'},
+      {id:'e3',from_node:'3',from_port:'out',to_node:'5',to_port:'in_0'},
+      {id:'e4',from_node:'4',from_port:'out',to_node:'5',to_port:'in_1'}
+    ],
+    nextId:10,planets:[]
+  },
+  {
+    name: 'Circuit Board Line',
+    icon: '&#x1F4BB;',
+    desc: '5 nodes — Iron ore + Copper ore → Iron Ingots + Copper Ingots → Circuit Boards',
+    nodes: {
+      '1':{id:'1',type:'mining',x:80,y:160,props:{resource:'iron_ore',miners:[{veins:6}],vu_level:0},computed:{}},
+      '2':{id:'2',type:'mining',x:80,y:380,props:{resource:'copper_ore',miners:[{veins:4}],vu_level:0},computed:{}},
+      '3':{id:'3',type:'arc_smelter',x:320,y:160,props:{count:2,recipe:'iron_ingot',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '4':{id:'4',type:'arc_smelter',x:320,y:380,props:{count:1,recipe:'copper_ingot',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '5':{id:'5',type:'assembler',x:560,y:270,props:{count:1,recipe:'circuit_board',tier:'mk2',input_sorter_tier:'mk2',input_sorter_reach:1,output_sorter_tier:'mk2',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}}
+    },
+    edges:[
+      {id:'e1',from_node:'1',from_port:'out',to_node:'3',to_port:'in_0'},
+      {id:'e2',from_node:'2',from_port:'out',to_node:'4',to_port:'in_0'},
+      {id:'e3',from_node:'3',from_port:'out',to_node:'5',to_port:'in_0'},
+      {id:'e4',from_node:'4',from_port:'out',to_node:'5',to_port:'in_1'}
+    ],
+    nextId:10,planets:[]
+  },
+  {
+    name: 'EM Matrix Line',
+    icon: '&#x1F52C;',
+    desc: '8 nodes — Full chain from raw ores to Electromagnetic Matrix (blue science)',
+    nodes: {
+      '1':{id:'1',type:'mining',x:60,y:180,props:{resource:'iron_ore',miners:[{veins:8}],vu_level:0},computed:{}},
+      '2':{id:'2',type:'mining',x:60,y:440,props:{resource:'copper_ore',miners:[{veins:6}],vu_level:0},computed:{}},
+      '3':{id:'3',type:'arc_smelter',x:300,y:80,props:{count:2,recipe:'magnet',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '4':{id:'4',type:'arc_smelter',x:300,y:240,props:{count:2,recipe:'iron_ingot',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '5':{id:'5',type:'arc_smelter',x:300,y:440,props:{count:2,recipe:'copper_ingot',input_sorter_tier:'mk1',input_sorter_reach:1,output_sorter_tier:'mk1',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '6':{id:'6',type:'assembler',x:560,y:160,props:{count:1,recipe:'magnetic_coil',tier:'mk2',input_sorter_tier:'mk2',input_sorter_reach:1,output_sorter_tier:'mk2',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '7':{id:'7',type:'assembler',x:560,y:360,props:{count:1,recipe:'circuit_board',tier:'mk2',input_sorter_tier:'mk2',input_sorter_reach:1,output_sorter_tier:'mk2',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}},
+      '8':{id:'8',type:'matrix_lab',x:820,y:260,props:{count:4,recipe:'em_matrix',input_sorter_tier:'mk2',input_sorter_reach:1,output_sorter_tier:'mk2',output_sorter_reach:1,proliferator_tier:'none',proliferator_mode:'extra_products'},computed:{}}
+    },
+    edges:[
+      {id:'e1',from_node:'1',from_port:'out',to_node:'3',to_port:'in_0'},
+      {id:'e2',from_node:'1',from_port:'out',to_node:'4',to_port:'in_0'},
+      {id:'e3',from_node:'2',from_port:'out',to_node:'5',to_port:'in_0'},
+      {id:'e4',from_node:'3',from_port:'out',to_node:'6',to_port:'in_0'},
+      {id:'e5',from_node:'5',from_port:'out',to_node:'6',to_port:'in_1'},
+      {id:'e6',from_node:'4',from_port:'out',to_node:'7',to_port:'in_0'},
+      {id:'e7',from_node:'5',from_port:'out',to_node:'7',to_port:'in_1'},
+      {id:'e8',from_node:'6',from_port:'out',to_node:'8',to_port:'in_0'},
+      {id:'e9',from_node:'7',from_port:'out',to_node:'8',to_port:'in_1'}
+    ],
+    nextId:20,planets:[]
+  }
+];
+
 var App = {
 
   init: function() {
@@ -729,6 +798,36 @@ var App = {
       }
       self.updateNodeDisplay(node);
     });
+
+    // ILS inter-planet auto-matching: run a second pass when ILS/PLS stations exist.
+    // First pass above gives export nodes their effective_input. Now build the supply
+    // map and re-run so import nodes (and their downstream) see the correct inflow.
+    if (!State._ilsPassActive) {
+      var hasILS = false;
+      var ilsKeys = Object.keys(State.nodes);
+      for (var ilsi = 0; ilsi < ilsKeys.length; ilsi++) {
+        var ilsNd = State.nodes[ilsKeys[ilsi]];
+        if (ilsNd.type === 'ils_station' || ilsNd.type === 'pls_station') { hasILS = true; break; }
+      }
+      if (hasILS) {
+        var ilsExportMap = {};
+        for (var ei = 0; ei < ilsKeys.length; ei++) {
+          var en = State.nodes[ilsKeys[ei]];
+          if ((en.type === 'ils_station' || en.type === 'pls_station') && en.props.mode === 'export' && en.computed) {
+            var eitem = en.props.item;
+            if (eitem) {
+              if (!ilsExportMap[eitem]) { ilsExportMap[eitem] = 0; }
+              ilsExportMap[eitem] += en.computed.effective_input || 0;
+            }
+          }
+        }
+        State._ilsSupply = ilsExportMap;
+        State._ilsPassActive = true;
+        self.recalcAll();
+        State._ilsPassActive = false;
+        State._ilsSupply = null;
+      }
+    }
   },
 
   // rendering
@@ -748,7 +847,7 @@ var App = {
     var _cur = State.currentPlanet;
     if (_cur !== 'all') {
       var _onCur = !(node.props.planet) || node.props.planet === _cur;
-      if (!_onCur) { el.style.opacity = '0.15'; el.style.pointerEvents = 'none'; }
+      if (!_onCur) { el.style.display = 'none'; }
     }
   },
 
@@ -756,16 +855,20 @@ var App = {
     var def = NODE_DEFS[node.type];
     var label = node.props.label || def.label;
     var html = '<div class="node-header" style="background:'+def.color+'22;border-color:'+def.color+'44">';
-    html += '<span class="nh-icon">'+def.icon+'</span>';
+    if (def.icon) {
+      html += '<img class="nh-icon" src="img/nodes/'+def.icon+'" width="20" height="20" onerror="this.style.display=\'none\'">';
+    } else {
+      html += '<span class="nh-icon-fallback" style="background:'+def.color+'44;color:'+def.color+'">'+def.label.slice(0,2).toUpperCase()+'</span>';
+    }
     html += '<span class="nh-title">'+escHtml(label)+'</span>';
     if (node.props.label && node.props.label !== def.label) {
       html += '<span class="nh-type">'+def.label+'</span>';
     }
     if (node.props.count !== undefined && node.props.count > 0) {
-      html += '<span style="background:rgba(255,255,255,0.18);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;flex-shrink:0">x'+node.props.count+'</span>';
+      html += '<span class="node-count-badge">x'+node.props.count+'</span>';
     }
     if (node.type === 'mining' && node.props.miners && node.props.miners.length > 0) {
-      html += '<span style="background:rgba(255,255,255,0.18);color:#fff;font-size:11px;font-weight:700;padding:1px 7px;border-radius:10px;flex-shrink:0">x'+node.props.miners.length+'</span>';
+      html += '<span class="node-count-badge">x'+node.props.miners.length+'</span>';
     }
     html += '<span class="nh-del" onclick="App.deleteNode(\''+node.id+'\')"></span>';
     html += '</div>';
@@ -785,7 +888,7 @@ var App = {
         var pidRec = 'in_' + pi;
         html += '<div class="port-row">';
         html += '<div class="port input" id="port_'+node.id+'_'+pidRec+'" data-node="'+node.id+'" data-port="'+pidRec+'" data-dir="in"></div>';
-        html += '<span class="port-label" style="font-size:10px">'+inamRec+'</span>';
+        html += '<span class="port-label port-label-sm">'+inamRec+'</span>';
         html += '</div>';
       }
     } else if (node.type === 'belt') {
@@ -801,7 +904,7 @@ var App = {
         var skey = slotKeys[si];
         html += '<div class="port-row">';
         html += '<div class="port input connected" id="port_'+node.id+'_'+skey+'" data-node="'+node.id+'" data-port="'+skey+'" data-dir="in" title="Input '+(si+1)+'"></div>';
-        html += '<span class="port-label" style="font-size:10px">In '+(si+1)+'</span>';
+        html += '<span class="port-label port-label-sm">In '+(si+1)+'</span>';
         html += '</div>';
       }
       // Always render one spare open port for new connections
@@ -811,9 +914,9 @@ var App = {
       html += '<div class="port-row">';
       html += '<div class="port input" id="port_'+node.id+'_'+nextSlot+'" data-node="'+node.id+'" data-port="'+nextSlot+'" data-dir="in" title="Connect input"></div>';
       if (slotKeys.length === 0) {
-        html += '<span class="port-label" style="font-size:10px">In</span>';
+        html += '<span class="port-label port-label-sm">In</span>';
       } else {
-        html += '<span class="port-label" style="font-size:10px;color:var(--text3)">+ in</span>';
+        html += '<span class="port-label port-label-dim">+ in</span>';
       }
       html += '</div>';
     } else if (node.type === 'storage_depot' || node.type === 'storage_tank') {
@@ -831,7 +934,7 @@ var App = {
       for (var si2 = 0; si2 < inKeys.length; si2++) {
         html += '<div class="port-row">';
         html += '<div class="port input connected" id="port_'+node.id+'_'+inKeys[si2]+'" data-node="'+node.id+'" data-port="'+inKeys[si2]+'" data-dir="in"></div>';
-        html += '<span class="port-label" style="font-size:10px">In '+(si2+1)+'</span>';
+        html += '<span class="port-label port-label-sm">In '+(si2+1)+'</span>';
         html += '</div>';
       }
       // Spare input port (if under max total)
@@ -840,24 +943,24 @@ var App = {
         while (usedIn['in_' + nextIn]) { nextIn++; }
         html += '<div class="port-row">';
         html += '<div class="port input" id="port_'+node.id+'_in_'+nextIn+'" data-node="'+node.id+'" data-port="in_'+nextIn+'" data-dir="in"></div>';
-        html += '<span class="port-label" style="font-size:10px;color:var(--text3)">'+(inKeys.length===0?'In':'+ in')+'</span>';
+        html += '<span class="port-label port-label-dim">'+(inKeys.length===0?'In':'+ in')+'</span>';
         html += '</div>';
       }
       html += '<div id="node_stats_'+node.id+'"></div>';
       // Render occupied output ports
       for (var so2 = 0; so2 < outKeys.length; so2++) {
-        html += '<div class="port-row" style="justify-content:flex-end;gap:6px">';
-        html += '<span class="port-label" style="font-size:10px;flex:1;text-align:right;padding-right:4px">Out '+(so2+1)+'</span>';
-        html += '<div class="port output connected" id="port_'+node.id+'_'+outKeys[so2]+'" data-node="'+node.id+'" data-port="'+outKeys[so2]+'" data-dir="out" style="flex-shrink:0"></div>';
+        html += '<div class="port-row port-row-out">';
+        html += '<span class="port-label port-label-right">Out '+(so2+1)+'</span>';
+        html += '<div class="port output connected port-no-shrink" id="port_'+node.id+'_'+outKeys[so2]+'" data-node="'+node.id+'" data-port="'+outKeys[so2]+'" data-dir="out"></div>';
         html += '</div>';
       }
       // Spare output port (if under max total)
       if (totalUsed < maxPorts) {
         var nextOut = 0;
         while (usedOut['out_' + nextOut]) { nextOut++; }
-        html += '<div class="port-row" style="justify-content:flex-end;gap:6px">';
-        html += '<span class="port-label" style="font-size:10px;flex:1;text-align:right;padding-right:4px;color:var(--text3)">'+(outKeys.length===0?'Out':'+ out')+'</span>';
-        html += '<div class="port output" id="port_'+node.id+'_out_'+nextOut+'" data-node="'+node.id+'" data-port="out_'+nextOut+'" data-dir="out" style="flex-shrink:0"></div>';
+        html += '<div class="port-row port-row-out">';
+        html += '<span class="port-label port-label-right-dim">'+(outKeys.length===0?'Out':'+ out')+'</span>';
+        html += '<div class="port output port-no-shrink" id="port_'+node.id+'_out_'+nextOut+'" data-node="'+node.id+'" data-port="out_'+nextOut+'" data-dir="out"></div>';
         html += '</div>';
       }
       // skip normal stats and output port rendering, already done above
@@ -875,9 +978,9 @@ var App = {
     // output ports
     if (def.ports.outputs.length > 0) {
       def.ports.outputs.forEach(function(port) {
-        html += '<div class="port-row" style="justify-content:flex-end;gap:6px">';
-        html += '<span class="port-label" style="flex:1;text-align:right;padding-right:4px">'+port.label+'</span>';
-        html += '<div class="port output" id="port_'+node.id+'_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="out" style="flex-shrink:0"></div>';
+        html += '<div class="port-row port-row-out">';
+        html += '<span class="port-label port-label-right">'+port.label+'</span>';
+        html += '<div class="port output port-no-shrink" id="port_'+node.id+'_'+port.id+'" data-node="'+node.id+'" data-port="'+port.id+'" data-dir="out"></div>';
         html += '</div>';
       });
     }
@@ -900,11 +1003,10 @@ var App = {
       var idef = ITEMS[c.item] || null;
       var icolor = idef ? idef.color : '#888';
       var iicon = idef ? idef.icon : '';
-      // Item chip
-      html += '<div style="display:flex;align-items:center;gap:5px;margin:4px 0 2px;padding:4px 7px;background:'+icolor+'22;border:1px solid '+icolor+'55;border-radius:6px">';
-      html += '<span style="font-size:13px">'+iicon+'</span>';
-      html += '<span style="font-size:11px;font-weight:500;color:#fff">'+itemName(c.item)+'</span>';
-      html += '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#fff">'+fmtRate(c.output_per_min)+'/min</span>';
+      html += '<div class="item-chip-lg" style="background:'+icolor+'22;border-color:'+icolor+'55">';
+      html += '<span class="chip-icon-lg">'+iicon+'</span>';
+      html += '<span class="chip-name">'+itemName(c.item)+'</span>';
+      html += '<span class="chip-rate">'+fmtRate(c.output_per_min)+'/min</span>';
       html += '</div>';
     } else if (node.type === 'belt') {
       var bitem = c.item || c.upstream_item || node.upstream_item;
@@ -913,99 +1015,89 @@ var App = {
       var bicon = bidef ? bidef.icon : '';
       var bpct = c.load_pct || 0;
       var bclass = bpct <= 80 ? '#22c55e' : bpct <= 100 ? '#f59e0b' : '#ef4444';
-      // item chip: shows source count if >1
       if (bidef) {
-        html += '<div style="display:flex;align-items:center;gap:5px;margin:3px 0 2px;padding:3px 7px;background:'+bcolor+'22;border:1px solid '+bcolor+'55;border-radius:6px">';
-        html += '<span style="font-size:12px">'+bicon+'</span>';
-        html += '<span style="font-size:10px;color:#fff">'+bidef.name+'</span>';
+        html += '<div class="item-chip-sm" style="background:'+bcolor+'22;border-color:'+bcolor+'55">';
+        html += '<span class="chip-icon-md">'+bicon+'</span>';
+        html += '<span class="chip-name-sm">'+bidef.name+'</span>';
         if (c.source_count > 1) {
-          html += '<span style="margin-left:auto;font-size:9px;color:#fff">'+c.source_count+' sources</span>';
+          html += '<span class="chip-sources">'+c.source_count+' sources</span>';
         }
         html += '</div>';
       }
-      // Load bar
-      html += '<div style="background:#1e2330;border-radius:3px;height:8px;overflow:hidden;margin-bottom:3px;margin-top:3px">';
+      html += '<div class="load-bar-track">';
       var fillPct = Math.min(bpct, 100);
-      html += '<div style="height:100%;width:'+fillPct+'%;background:'+bclass+';border-radius:3px;transition:width .3s"></div>';
+      html += '<div class="eff-bar-fill" style="width:'+fillPct+'%;background:'+bclass+'"></div>';
       html += '</div>';
-      html += '<div style="display:flex;justify-content:space-between;font-size:10px">';
-      html += '<span style="color:#fff">'+bpct+'%</span>';
-      html += '<span style="color:#fff">'+fmtRate(c.output_per_min)+' / '+c.capacity+'/min</span>';
+      html += '<div class="stat-jb-10">';
+      html += '<span class="stat-val-w">'+bpct+'%</span>';
+      html += '<span class="stat-val-w">'+fmtRate(c.output_per_min)+' / '+c.capacity+'/min</span>';
       html += '</div>';
       if (c.input_per_min > c.capacity) {
-        html += '<div style="font-size:9px;color:#ef4444;margin-top:2px">Overflow: '+fmtRate(c.input_per_min - c.capacity)+'/min lost</div>';
+        html += '<div class="ns-overflow">Overflow: '+fmtRate(c.input_per_min - c.capacity)+'/min lost</div>';
       }
     } else if (node.type === 'storage_depot' || node.type === 'storage_tank') {
       var sitem = c.item || node.props.item;
       var sidef = sitem && ITEMS[sitem] ? ITEMS[sitem] : null;
       var scolor = sidef ? sidef.color : '#6b7280';
-      // Item chip
       if (sidef) {
-        html += '<div style="display:flex;align-items:center;gap:5px;margin:3px 0 2px;padding:3px 7px;background:'+scolor+'22;border:1px solid '+scolor+'55;border-radius:6px">';
-        html += '<span style="font-size:10px;color:#fff">'+sidef.name+'</span>';
+        html += '<div class="item-chip-sm" style="background:'+scolor+'22;border-color:'+scolor+'55">';
+        html += '<span class="chip-name-sm">'+sidef.name+'</span>';
         html += '</div>';
       } else {
-        html += '<div style="font-size:10px;color:var(--text3);padding:3px 0">No item set yet</div>';
+        html += '<div class="ns-empty">No item set yet</div>';
       }
-      // Use actual_outflow if available (set by post-processing pass after full recalc),
-      // otherwise fall back to output_per_min for the first render pass.
       var actualOut = (c.actual_outflow !== undefined) ? c.actual_outflow : c.output_per_min;
       var netFlow2 = (c.net_flow !== undefined) ? c.net_flow : (c.input_per_min - actualOut);
-      // In/Out row
-      html += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#fff;margin-top:4px">';
+      html += '<div class="ns-io-row">';
       html += '<span>In: '+fmtRate(c.input_per_min)+'/min</span>';
       html += '<span>Out: '+fmtRate(actualOut)+'/min</span>';
       html += '</div>';
-      // Net flow status
       var capacityDrain = c.sorter_cap_out !== undefined && c.sorter_cap_out > c.input_per_min + 0.01;
       if (Math.abs(netFlow2) < 0.5) {
-        html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Balanced</div>';
+        html += '<div class="ns-balanced">Balanced</div>';
       } else if (netFlow2 > 0.5) {
-        html += '<div style="font-size:9px;color:#22c55e;margin-top:2px">Filling: +'+fmtRate(netFlow2)+'/min</div>';
+        html += '<div class="ns-filling">Filling: +'+fmtRate(netFlow2)+'/min</div>';
       } else {
-        html += '<div style="font-size:9px;color:#ef4444;margin-top:2px;padding:3px 6px;background:#2d0505;border-radius:4px;border:1px solid #ef4444">Draining: '+fmtRate(Math.abs(netFlow2))+'/min</div>';
+        html += '<div class="ns-draining">Draining: '+fmtRate(Math.abs(netFlow2))+'/min</div>';
       }
-      // Warn if output sorter capacity exceeds input (depot will drain if pre-filled)
       if (capacityDrain && Math.abs(netFlow2) < 0.5) {
-        html += '<div style="font-size:9px;color:#f59e0b;margin-top:2px">Output sorter cap ('+fmtRate(c.sorter_cap_out)+'/min) exceeds input</div>';
+        html += '<div class="ns-warn-amber">Output sorter cap ('+fmtRate(c.sorter_cap_out)+'/min) exceeds input</div>';
       }
-      // Capacity note
-      html += '<div style="font-size:9px;color:var(--text3);margin-top:2px">Capacity: '+c.capacity.toLocaleString()+' items | Sorter: '+fmtRate(SORTER_SPEEDS[node.props.sorter_tier||"mk1"]*60/(node.props.sorter_reach||1))+'/min/slot</div>';
+      html += '<div class="ns-note">Capacity: '+c.capacity.toLocaleString()+' items | Sorter: '+fmtRate(SORTER_SPEEDS[node.props.sorter_tier||"mk1"]*60/(node.props.sorter_reach||1))+'/min/slot</div>';
     } else if (node.type === 'thermal_plant' || node.type === 'mini_fusion') {
       var ec = (c.efficiency || 0) >= 90 ? '#22c55e' : (c.efficiency || 0) >= 50 ? '#f59e0b' : '#ef4444';
       var fuelItem = ITEMS[c.item_in] || null;
       if (fuelItem) {
-        html += '<div style="display:flex;align-items:center;gap:4px;margin:3px 0;padding:3px 7px;background:'+fuelItem.color+'22;border:1px solid '+fuelItem.color+'44;border-radius:6px;font-size:10px">';
-        html += '<span>'+fuelItem.icon+'</span><span style="color:#fff">'+fuelItem.name+'</span>';
-        html += '<span style="margin-left:auto;color:var(--text3)">→ Power</span>';
+        html += '<div class="item-chip-xs" style="background:'+fuelItem.color+'22;border-color:'+fuelItem.color+'44">';
+        html += '<span>'+fuelItem.icon+'</span><span class="stat-val-w">'+fuelItem.name+'</span>';
+        html += '<span class="chip-suffix">→ Power</span>';
         html += '</div>';
       }
-      html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:3px">';
-      html += '<span style="color:#fff">Power</span><span style="font-weight:500;color:#fff">'+fmtNum(c.output_per_min,2)+' MW</span>';
+      html += '<div class="stat-jb-11">';
+      html += '<span class="stat-val-w">Power</span><span class="stat-val-w">'+fmtNum(c.output_per_min,2)+' MW</span>';
       html += '</div>';
-      // Efficiency bar
-      html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden;margin:4px 0">';
-      html += '<div style="height:100%;width:'+Math.min(c.efficiency||0,100)+'%;background:'+ec+';border-radius:3px"></div>';
+      html += '<div class="eff-bar-track ns-eff-margin">';
+      html += '<div class="eff-bar-fill" style="width:'+Math.min(c.efficiency||0,100)+'%;background:'+ec+'"></div>';
       html += '</div>';
     } else if (node.type === 'wind_turbine' || node.type === 'solar_panel' ||
                node.type === 'geothermal' || node.type === 'artificial_star' ||
                node.type === 'ray_receiver') {
-      html += '<div style="display:flex;justify-content:space-between;font-size:11px;margin-top:3px">';
-      html += '<span style="color:var(--text3)">Power</span>';
-      html += '<span style="font-weight:600;color:#22c55e">'+fmtNum(c.output_per_min,2)+' MW</span>';
+      html += '<div class="stat-jb-11">';
+      html += '<span class="stat-text3">Power</span>';
+      html += '<span class="stat-val-ok">'+fmtNum(c.output_per_min,2)+' MW</span>';
       html += '</div>';
       if (c.max_output !== undefined && c.max_output !== c.output_per_min) {
-        html += '<div style="font-size:9px;color:var(--text3);margin-top:1px">Max: '+fmtNum(c.max_output,2)+' MW</div>';
+        html += '<div class="ns-maxnote">Max: '+fmtNum(c.max_output,2)+' MW</div>';
       }
     } else if (node.type === 'water_pump' || node.type === 'oil_extractor') {
       var witem = c.item_out || c.item;
       var widef = (witem && ITEMS[witem]) ? ITEMS[witem] : null;
       var wcolor = widef ? widef.color : '#38bdf8';
       var wicon = widef ? widef.icon : '';
-      html += '<div style="display:flex;align-items:center;gap:5px;margin:4px 0 2px;padding:4px 7px;background:'+wcolor+'22;border:1px solid '+wcolor+'55;border-radius:6px">';
-      html += '<span style="font-size:13px">'+wicon+'</span>';
-      html += '<span style="font-size:11px;font-weight:500;color:#fff">'+(widef ? widef.name : witem)+'</span>';
-      html += '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#fff">'+fmtRate(c.output_per_min)+'/min</span>';
+      html += '<div class="item-chip-lg" style="background:'+wcolor+'22;border-color:'+wcolor+'55">';
+      html += '<span class="chip-icon-lg">'+wicon+'</span>';
+      html += '<span class="chip-name">'+(widef ? widef.name : witem)+'</span>';
+      html += '<span class="chip-rate">'+fmtRate(c.output_per_min)+'/min</span>';
       html += '</div>';
     } else if (node.type === 'pls_station' || node.type === 'ils_station') {
       var lsMode = node.props.mode || 'import';
@@ -1013,35 +1105,32 @@ var App = {
       var lsIdef = (lsItem && ITEMS[lsItem]) ? ITEMS[lsItem] : null;
       var lsName = lsIdef ? lsIdef.name : (lsItem || 'No item set');
       var lsBadgeColor = lsMode === 'import' ? '#22c55e' : '#f59e0b';
-      html += '<div style="display:flex;align-items:center;gap:6px;margin:4px 0 3px">';
-      html += '<span style="font-size:9px;font-weight:700;padding:1px 5px;background:'+lsBadgeColor+'22;border:1px solid '+lsBadgeColor+'55;border-radius:3px;color:'+lsBadgeColor+'">'+(lsMode==='import'?'IMPORT':'EXPORT')+'</span>';
+      html += '<div class="ls-badge-row">';
+      html += '<span class="ls-badge" style="background:'+lsBadgeColor+'22;border-color:'+lsBadgeColor+'55;color:'+lsBadgeColor+'">'+(lsMode==='import'?'IMPORT':'EXPORT')+'</span>';
       if (lsIdef) {
-        html += '<span style="font-size:10px;color:#fff;flex:1">'+lsIdef.icon+' '+lsName+'</span>';
+        html += '<span class="ls-item-name">'+lsIdef.icon+' '+lsName+'</span>';
       } else {
-        html += '<span style="font-size:10px;color:var(--text3);flex:1">No item set</span>';
+        html += '<span class="ls-item-none">No item set</span>';
       }
       html += '</div>';
       if (lsMode === 'import') {
-        html += '<div style="font-size:11px;color:#fff;margin:2px 0">'+fmtRate(c.output_per_min)+'/min</div>';
+        html += '<div class="ns-rate">'+fmtRate(c.output_per_min)+'/min</div>';
       } else {
         var lsEff = c.efficiency || 0;
         var lsEc = lsEff >= 90 ? '#22c55e' : lsEff >= 50 ? '#f59e0b' : '#ef4444';
-        html += '<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:2px">';
-        html += '<span style="color:#fff">'+fmtRate(c.effective_input||0)+' / '+fmtRate(c.demand_per_min||0)+'/min</span>';
+        html += '<div class="ns-eff-row">';
+        html += '<span class="stat-val-w">'+fmtRate(c.effective_input||0)+' / '+fmtRate(c.demand_per_min||0)+'/min</span>';
         html += '<span style="color:'+lsEc+'">'+lsEff+'%</span>';
         html += '</div>';
-        html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden;margin-top:3px">';
-        html += '<div style="height:100%;width:'+Math.min(lsEff,100)+'%;background:'+lsEc+';border-radius:3px"></div>';
+        html += '<div class="eff-bar-track-mt">';
+        html += '<div class="eff-bar-fill" style="width:'+Math.min(lsEff,100)+'%;background:'+lsEc+'"></div>';
         html += '</div>';
       }
       if (node.props.planet) {
-        html += '<div style="font-size:9px;color:var(--text3);margin-top:3px">'+escHtml(node.props.planet)+'</div>';
+        html += '<div class="ns-planet">'+escHtml(node.props.planet)+'</div>';
       }
     } else {
-      // Production nodes: arc_smelter, assembler, chemical_plant, oil_refinery, particle_collider, matrix_lab
-      // Multi-input nodes show per-ingredient supply status
       if (c.input_details && c.input_details.length > 0) {
-        // Per-input rows
         for (var id2 = 0; id2 < c.input_details.length; id2++) {
           var inp2 = c.input_details[id2];
           var idef2 = ITEMS[inp2.item] ? ITEMS[inp2.item] : null;
@@ -1050,21 +1139,20 @@ var App = {
           var iname2 = idef2 ? idef2.name : inp2.item;
           var iRatio = inp2.ratio || 0;
           var iStatus = iRatio >= 0.95 ? '#22c55e' : iRatio >= 0.5 ? '#f59e0b' : '#ef4444';
-          html += '<div style="display:flex;align-items:center;gap:4px;margin:2px 0;padding:2px 5px;background:'+icolor2+'15;border:1px solid '+icolor2+'33;border-radius:4px">';
-          html += '<span style="font-size:11px">'+iicon2+'</span>';
-          html += '<span style="font-size:9px;color:#fff;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+iname2+'</span>';
-          html += '<span style="font-size:9px;color:#fff;flex-shrink:0;margin-left:2px">'+fmtRate(inp2.arriving)+'/'+fmtRate(inp2.need)+'</span>';
+          html += '<div class="ingr-row" style="background:'+icolor2+'15;border-color:'+icolor2+'33">';
+          html += '<span class="ingr-icon">'+iicon2+'</span>';
+          html += '<span class="ingr-name">'+iname2+'</span>';
+          html += '<span class="ingr-qty">'+fmtRate(inp2.arriving)+'/'+fmtRate(inp2.need)+'</span>';
           html += '</div>';
         }
-        // Output row
         var outDef2 = (c.item_out && ITEMS[c.item_out]) ? ITEMS[c.item_out] : null;
         var outColor2 = outDef2 ? outDef2.color : '#6b7280';
         if (outDef2) {
-          html += '<div style="display:flex;align-items:center;gap:4px;margin:3px 0 2px;padding:2px 5px;background:'+outColor2+'22;border:1px solid '+outColor2+'44;border-radius:4px">';
-          html += '<span style="font-size:9px;color:var(--text3)">→</span>';
-          html += '<span style="font-size:11px">'+outDef2.icon+'</span>';
-          html += '<span style="font-size:9px;color:#fff;flex:1">'+outDef2.name+'</span>';
-          html += '<span style="font-size:9px;font-weight:500;color:#fff">'+fmtRate(c.output_per_min)+'/min</span>';
+          html += '<div class="out-row" style="background:'+outColor2+'22;border-color:'+outColor2+'44">';
+          html += '<span class="out-arrow">→</span>';
+          html += '<span class="ingr-icon">'+outDef2.icon+'</span>';
+          html += '<span class="out-name">'+outDef2.name+'</span>';
+          html += '<span class="out-qty">'+fmtRate(c.output_per_min)+'/min</span>';
           html += '</div>';
         }
       } else if (c.item_in !== undefined || c.item_out !== undefined) {
@@ -1072,13 +1160,13 @@ var App = {
         var outDef = (c.item_out && ITEMS[c.item_out]) ? ITEMS[c.item_out] : null;
         var inColor = inDef ? inDef.color : '#6b7280';
         var outColor = outDef ? outDef.color : '#6b7280';
-        html += '<div style="display:flex;align-items:center;gap:4px;margin:4px 0 3px;font-size:11px">';
+        html += '<div class="chem-flow-row">';
         if (inDef) {
-          html += '<span style="padding:2px 6px;background:'+inColor+'22;border:1px solid '+inColor+'44;border-radius:4px;color:#fff">'+inDef.icon+' '+inDef.name+'</span>';
+          html += '<span class="chem-chip" style="background:'+inColor+'22;border-color:'+inColor+'44">'+inDef.icon+' '+inDef.name+'</span>';
         }
-        html += '<span style="color:var(--text3);flex-shrink:0">→</span>';
+        html += '<span class="out-arrow">→</span>';
         if (outDef) {
-          html += '<span style="padding:2px 6px;background:'+outColor+'22;border:1px solid '+outColor+'44;border-radius:4px;color:#fff">'+outDef.icon+' '+outDef.name+'</span>';
+          html += '<span class="chem-chip" style="background:'+outColor+'22;border-color:'+outColor+'44">'+outDef.icon+' '+outDef.name+'</span>';
         }
         html += '</div>';
       }
@@ -1086,17 +1174,17 @@ var App = {
         var eff = c.efficiency || 0;
         var ec3 = eff >= 90 ? '#22c55e' : eff >= 50 ? '#f59e0b' : '#ef4444';
         if (!c.input_details || c.input_details.length === 0) {
-          html += '<div style="display:flex;justify-content:space-between;font-size:10px;margin-top:2px">';
-          html += '<span style="color:#fff">'+fmtRate(c.output_per_min)+'/min</span>';
-          html += '<span style="color:#fff">'+eff+'%</span>';
+          html += '<div class="ns-eff-row">';
+          html += '<span class="stat-val-w">'+fmtRate(c.output_per_min)+'/min</span>';
+          html += '<span class="stat-val-w">'+eff+'%</span>';
           html += '</div>';
         }
-        html += '<div style="display:flex;justify-content:space-between;font-size:9px;color:#fff;margin-top:3px;margin-bottom:1px">';
+        html += '<div class="ns-eff-detail">';
         html += '<span>Efficiency</span>';
         html += '<span>'+fmtRate(c.output_per_min)+' / '+fmtRate(c.max_output||c.output_per_min)+' /min</span>';
         html += '</div>';
-        html += '<div style="background:#1e2330;border-radius:3px;height:5px;overflow:hidden">';
-        html += '<div style="height:100%;width:'+Math.min(eff,100)+'%;background:'+ec3+';border-radius:3px"></div>';
+        html += '<div class="eff-bar-track">';
+        html += '<div class="eff-bar-fill" style="width:'+Math.min(eff,100)+'%;background:'+ec3+'"></div>';
         html += '</div>';
       }
     }
@@ -1321,6 +1409,49 @@ var App = {
       }
     }
 
+    // ILS inter-planet dashed lines (shown in "All" view only)
+    if (State.currentPlanet === 'all' && State.planets.length > 0) {
+      var wrapRectILS = document.getElementById('canvas-wrap').getBoundingClientRect();
+      var ilsExports = [];
+      var nodeKeysILS = Object.keys(State.nodes);
+      for (var ilsEi = 0; ilsEi < nodeKeysILS.length; ilsEi++) {
+        var ilsEn = State.nodes[nodeKeysILS[ilsEi]];
+        if ((ilsEn.type === 'ils_station' || ilsEn.type === 'pls_station') && ilsEn.props.mode === 'export' && ilsEn.props.item) {
+          ilsExports.push(ilsEn);
+        }
+      }
+      for (var ilsExi = 0; ilsExi < ilsExports.length; ilsExi++) {
+        var ilsExp = ilsExports[ilsExi];
+        var ilsExpEl = document.getElementById('node_' + ilsExp.id);
+        if (!ilsExpEl || ilsExpEl.style.display === 'none') { continue; }
+        var ilsExpRect = ilsExpEl.getBoundingClientRect();
+        var ilsEx = ilsExpRect.left + ilsExpRect.width / 2 - wrapRectILS.left;
+        var ilsEy = ilsExpRect.top + ilsExpRect.height / 2 - wrapRectILS.top;
+
+        for (var ilsIi = 0; ilsIi < nodeKeysILS.length; ilsIi++) {
+          var ilsImp = State.nodes[nodeKeysILS[ilsIi]];
+          if ((ilsImp.type !== 'ils_station' && ilsImp.type !== 'pls_station') || ilsImp.props.mode !== 'import') { continue; }
+          if (ilsImp.props.item !== ilsExp.props.item) { continue; }
+          var ilsImpEl = document.getElementById('node_' + ilsImp.id);
+          if (!ilsImpEl || ilsImpEl.style.display === 'none') { continue; }
+          var ilsImpRect = ilsImpEl.getBoundingClientRect();
+          var ilsIx = ilsImpRect.left + ilsImpRect.width / 2 - wrapRectILS.left;
+          var ilsIy = ilsImpRect.top + ilsImpRect.height / 2 - wrapRectILS.top;
+
+          var ilsDx = Math.abs(ilsIx - ilsEx) * 0.5;
+          var ilsD = 'M ' + ilsEx + ' ' + ilsEy + ' C ' + (ilsEx + ilsDx) + ' ' + ilsEy + ', ' + (ilsIx - ilsDx) + ' ' + ilsIy + ', ' + ilsIx + ' ' + ilsIy;
+          var ilsPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          ilsPath.setAttribute('d', ilsD);
+          ilsPath.setAttribute('fill', 'none');
+          ilsPath.setAttribute('stroke', '#a78bfa');
+          ilsPath.setAttribute('stroke-width', '1.5');
+          ilsPath.setAttribute('stroke-dasharray', '6 4');
+          ilsPath.setAttribute('stroke-opacity', '0.55');
+          svg.appendChild(ilsPath);
+        }
+      }
+    }
+
     // draw in-progress connection line
     if (State.connecting) {
       var fc = State.connecting;
@@ -1370,13 +1501,28 @@ var App = {
       var t = types[i];
       var def = NODE_DEFS[t];
       html += '<div class="palette-item" draggable="true" data-type="'+t+'" onclick="App.addNode(this.dataset.type,App.getAddPos())">';
-      html += '<div class="pi-icon">'+def.icon+'</div>';
+      if (def.icon) {
+        html += '<div class="pi-icon"><img src="img/nodes/'+def.icon+'" width="24" height="24" onerror="this.style.display=\'none\'"></div>';
+      } else {
+        html += '<div class="pi-icon pi-icon-fallback" style="background:'+def.color+'44;color:'+def.color+'">'+def.label.slice(0,2).toUpperCase()+'</div>';
+      }
       html += '<div class="pi-name">'+def.label+'</div>';
       html += '</div>';
     }
     html += '</div>';
-    html += '<div style="margin-top:16px"><div class="prop-label">Tips</div>';
-    html += '<div style="font-size:11px;color:var(--text3);line-height:1.6">';
+    html += '<div class="section-wrap"><div class="prop-label">&#x1F4E6; Examples</div>';
+    html += '<div class="hint-text-mb">Load a starter factory to explore the tool.</div>';
+    html += '<div class="flex-col-gap6">';
+    for (var ei = 0; ei < EXAMPLE_FACTORIES.length; ei++) {
+      var ex = EXAMPLE_FACTORIES[ei];
+      html += '<button class="btn btn-left" onclick="App.loadExample('+ei+')">';
+      html += '<span class="example-icon">'+ex.icon+'</span>';
+      html += '<span><strong>'+escHtml(ex.name)+'</strong><br><span class="example-desc">'+escHtml(ex.desc)+'</span></span>';
+      html += '</button>';
+    }
+    html += '</div></div>';
+    html += '<div class="section-wrap"><div class="prop-label">Tips</div>';
+    html += '<div class="hint-text">';
     html += '• Drag node to move<br>';
     html += '• Click output port (gold), drag to input port (teal) to connect<br>';
     html += '• Right-click node or edge for options<br>';
@@ -1390,24 +1536,24 @@ var App = {
     var multiIds = Object.keys(State.multiSelected);
     if (multiIds.length > 0) {
       var html = '<div class="prop-label">'+multiIds.length+' nodes selected</div>';
-      html += '<div style="font-size:12px;color:var(--text2);margin-bottom:12px">Drag any selected node to move all together. Press Delete to remove all.</div>';
-      html += '<div style="display:flex;flex-direction:column;gap:6px">';
+      html += '<div class="prop-hint-text">Drag any selected node to move all together. Press Delete to remove all.</div>';
+      html += '<div class="flex-col-gap6">';
       for (var mi = 0; mi < multiIds.length; mi++) {
         var mn = State.nodes[multiIds[mi]];
         if (!mn) { continue; }
         var mdef = NODE_DEFS[mn.type];
-        html += '<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:6px;cursor:pointer" data-nid="'+mn.id+'" onclick="App.selectNode(this.dataset.nid)">';
+        html += '<div class="node-list-item" data-nid="'+mn.id+'" onclick="App.selectNode(this.dataset.nid)">';
         html += '<span>'+mdef.icon+'</span>';
-        html += '<span style="font-size:12px;font-weight:500">'+(mn.props.label || mdef.label)+'</span>';
-        html += '<span style="margin-left:auto;font-size:10px;color:var(--text3)">click to edit</span>';
+        html += '<span class="node-list-name">'+(mn.props.label || mdef.label)+'</span>';
+        html += '<span class="node-list-hint">click to edit</span>';
         html += '</div>';
       }
       html += '</div>';
-      html += '<button class="btn danger" style="width:100%;margin-top:12px" onclick="App.deleteMultiSelected()"> Delete all selected</button>';
+      html += '<button class="btn danger btn-full mt-12" onclick="App.deleteMultiSelected()"> Delete all selected</button>';
       return html;
     }
     if (!State.selected) {
-      return '<div class="no-select">Select a node to edit its properties<br><br><span style="font-size:11px;color:var(--text3)">Tip: drag on empty canvas to box-select multiple nodes. Shift+click to add to selection.</span></div>';
+      return '<div class="no-select">Select a node to edit its properties<br><br><span class="tip-text">Tip: drag on empty canvas to box-select multiple nodes. Shift+click to add to selection.</span></div>';
     }
     var node = State.nodes[State.selected];
     if (!node) {
@@ -1422,8 +1568,8 @@ var App = {
 
     if (State.planets.length > 0) {
       var nodePlanet = node.props.planet || '';
-      html += '<div class="prop-row"><label style="font-size:12px;color:var(--text2);min-width:60px">Planet</label>';
-      html += '<select style="flex:1;padding:4px 6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:12px" onchange="App.setProp(\''+node.id+'\',\'planet\',this.value)">';
+      html += '<div class="prop-row"><label class="label-60">Planet</label>';
+      html += '<select class="select-ctrl" onchange="App.setProp(\''+node.id+'\',\'planet\',this.value)">';
       html += '<option value=""'+(nodePlanet===''?' selected':'')+'>&#8212; unassigned &#8212;</option>';
       for (var _pi = 0; _pi < State.planets.length; _pi++) {
         var _pn = State.planets[_pi];
@@ -1436,18 +1582,18 @@ var App = {
       html += this.propText(node, 'label', 'Name');
       html += this.propRecipeSearch(node, 'resource', 'Resource', itemOptions());
       html += this.propRange(node, 'vu_level', 'VU Level', 0, 20, 1);
-      html += '<div class="prop-label" style="margin-top:12px">Miners</div>';
+      html += '<div class="prop-label mt-12">Miners</div>';
       for (var i = 0; i < node.props.miners.length; i++) {
         var idx = i;
-        html += '<div class="prop-group" style="border:1px solid var(--border);border-radius:5px;padding:8px;margin-bottom:6px">';
-        html += '<div style="font-size:11px;color:var(--text3);margin-bottom:6px">Miner '+(i+1)+'</div>';
+        html += '<div class="prop-group prop-group-bordered">';
+        html += '<div class="prop-group-hint">Miner '+(i+1)+'</div>';
         html += '<div class="prop-row"><label>Veins covered</label><input type="number" min="1" max="12" value="'+node.props.miners[i].veins+'" onchange="App.updateMinerVein(\''+node.id+'\','+idx+',this.value)"></div>';
         if (node.props.miners.length > 1) {
-          html += '<div style="text-align:right"><span style="font-size:11px;color:var(--bad);cursor:pointer" onclick="App.removeMiner(\''+node.id+'\','+idx+')"> Remove</span></div>';
+          html += '<div class="text-right"><span class="miner-remove-btn" onclick="App.removeMiner(\''+node.id+'\','+idx+')"> Remove</span></div>';
         }
         html += '</div>';
       }
-      html += '<button class="btn" style="width:100%;margin-top:4px" onclick="App.addMiner(\''+node.id+'\')">+ Add miner</button>';
+      html += '<button class="btn btn-full mt-4" onclick="App.addMiner(\''+node.id+'\')">+ Add miner</button>';
     } else if (node.type === 'belt') {
       html += this.propText(node, 'label', 'Name');
       html += this.propSelect(node, 'tier', 'Belt tier', [{v:'mk1',l:'Mk.I (360/min)'},{v:'mk2',l:'Mk.II (720/min)'},{v:'mk3',l:'Mk.III (1800/min)'}]);
@@ -1465,17 +1611,17 @@ var App = {
         var totalCount = recipeOptions(mtype).length;
         if (filteredCount < totalCount && filteredCount > 0) {
           var itemLabels = cleanFilterItems.map(function(fi){ return itemName(fi); }).join(' + ');
-          html += '<div style="font-size:11px;color:var(--teal);margin-bottom:4px;padding:4px 8px;background:#0f2027;border-radius:4px;border:1px solid var(--teal)">Filtered to '+filteredCount+' of '+totalCount+' recipes matching: <strong>'+itemLabels+'</strong></div>';
+          html += '<div class="filter-banner-teal">Filtered to '+filteredCount+' of '+totalCount+' recipes matching: <strong>'+itemLabels+'</strong></div>';
         } else if (filteredCount === 0) {
-          html += '<div style="font-size:11px;color:var(--bad);margin-bottom:4px;padding:4px 8px;background:#2d0505;border-radius:4px;border:1px solid var(--bad)">No recipes match all connected inputs. Showing all recipes.</div>';
+          html += '<div class="filter-banner-red">No recipes match all connected inputs. Showing all recipes.</div>';
           cleanFilterItems = [];
         }
       }
       html += this.propRecipeSearch(node, 'recipe', 'Recipe', recipeOptions(mtype, cleanFilterItems));
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += '<div class="prop-label mt-10">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square (full speed)'},{v:2,l:'2 squares (half speed)'},{v:3,l:'3 squares (1/3 speed)'}]);
-      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += '<div class="prop-label mt-10">Output Sorter</div>';
       html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square (full speed)'},{v:2,l:'2 squares (half speed)'},{v:3,l:'3 squares (1/3 speed)'}]);
       html += this.propProliferator(node);
@@ -1487,10 +1633,10 @@ var App = {
       html += this.propNum(node, 'recipe_time', 'Recipe time (sec)', 0.1, 60);
       html += this.propNum(node, 'input_qty', 'Input qty/cycle', 1, 20);
       html += this.propNum(node, 'output_qty', 'Output qty/cycle', 1, 20);
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += '<div class="prop-label mt-10">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
-      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += '<div class="prop-label mt-10">Output Sorter</div>';
       html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
     } else if (node.type === 'thermal_plant') {
@@ -1500,7 +1646,7 @@ var App = {
         {v:'coal',l:'Coal (60/min)'},{v:'energetic_graphite',l:'Energized Graphite (24/min)'},
         {v:'hydrogen',l:'Hydrogen (18/min)'},{v:'refined_oil',l:'Refined Oil (~25.7/min)'},{v:'fire_ice',l:'Fire Ice (~33.8/min)'}
       ]);
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += '<div class="prop-label mt-10">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
     } else if (node.type === 'storage_depot' || node.type === 'storage_tank') {
@@ -1513,17 +1659,17 @@ var App = {
       }
       var stItem = node.props.item;
       var stItemName = stItem && ITEMS[stItem] ? ITEMS[stItem].name : (stItem || 'Not set yet');
-      html += '<div class="prop-row"><label>Item</label><span style="color:var(--text2);font-size:11px">'+stItemName+'</span>';
+      html += '<div class="prop-row"><label>Item</label><span class="prop-val-text">'+stItemName+'</span>';
       if (stItem) {
-        html += ' <button onclick="App.clearStorageItem(\''+node.id+'\')" style="margin-left:6px;font-size:10px;padding:1px 6px;background:var(--bg4);border:1px solid var(--border2);border-radius:3px;color:var(--text2);cursor:pointer">Clear</button>';
+        html += ' <button onclick="App.clearStorageItem(\''+node.id+'\')" class="btn-inline-sm">Clear</button>';
       }
       html += '</div>';
-      html += '<div class="prop-label" style="margin-top:8px">Sorter (all slots)</div>';
+      html += '<div class="prop-label mt-8">Sorter (all slots)</div>';
       html += this.propSelect(node, 'sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
       if (node.computed && !node.computed.error) {
         var sc2 = node.computed;
-        html += '<div class="prop-label" style="margin-top:8px">Storage Stats</div>';
+        html += '<div class="prop-label mt-8">Storage Stats</div>';
         html += '<div class="prop-stat"><span>Input rate</span><strong>'+fmtRate(sc2.input_per_min)+'/min</strong></div>';
         html += '<div class="prop-stat"><span>Output rate</span><strong>'+fmtRate(sc2.output_per_min)+'/min</strong></div>';
         if (sc2.sorter_cap_in !== undefined) {
@@ -1537,17 +1683,17 @@ var App = {
       html += this.propNum(node, 'count', 'Count', 1, 200);
       html += this.propRecipeSearch(node, 'item', 'Item consumed', itemOptions());
       html += this.propNum(node, 'consumption_per_min', 'Consume/min (each)', 1, 10000);
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += '<div class="prop-label mt-10">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
     } else if (node.type === 'oil_refinery') {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
       html += this.propRecipeSearch(node, 'recipe', 'Recipe', recipeOptions('oil_refinery', node.upstream_items || node.upstream_item));
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += '<div class="prop-label mt-10">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
-      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += '<div class="prop-label mt-10">Output Sorter</div>';
       html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
       html += this.propProliferator(node);
@@ -1555,37 +1701,37 @@ var App = {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
       html += this.propRecipeSearch(node, 'recipe', 'Recipe', recipeOptions('particle_collider', node.upstream_items || node.upstream_item));
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += '<div class="prop-label mt-10">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
-      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += '<div class="prop-label mt-10">Output Sorter</div>';
       html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
       html += this.propProliferator(node);
     } else if (node.type === 'fractionator') {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter (Hydrogen in)</div>';
+      html += '<div class="prop-label mt-10">Input Sorter (Hydrogen in)</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
-      html += '<div class="prop-label" style="margin-top:10px">Output Sorter (Deuterium out)</div>';
+      html += '<div class="prop-label mt-10">Output Sorter (Deuterium out)</div>';
       html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
     } else if (node.type === 'matrix_lab') {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
       html += this.propRecipeSearch(node, 'recipe', 'Recipe', recipeOptions('matrix_lab', node.upstream_items || node.upstream_item));
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter</div>';
+      html += '<div class="prop-label mt-10">Input Sorter</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
-      html += '<div class="prop-label" style="margin-top:10px">Output Sorter</div>';
+      html += '<div class="prop-label mt-10">Output Sorter</div>';
       html += this.propSelect(node, 'output_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'output_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
       html += this.propProliferator(node);
     } else if (node.type === 'mini_fusion') {
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 200);
-      html += '<div class="prop-label" style="margin-top:10px">Input Sorter (Deuteron Rods)</div>';
+      html += '<div class="prop-label mt-10">Input Sorter (Deuteron Rods)</div>';
       html += this.propSelect(node, 'input_sorter_tier', 'Tier', sorterOptions());
       html += this.propSelect(node, 'input_sorter_reach', 'Reach (squares)', [{v:1,l:'1 square'},{v:2,l:'2 squares'},{v:3,l:'3 squares'}]);
     } else if (node.type === 'water_pump') {
@@ -1626,7 +1772,7 @@ var App = {
 
     // computed panel
     if (node.computed && Object.keys(node.computed).length > 0) {
-      html += '<div class="prop-label" style="margin-top:16px">Live stats</div>';
+      html += '<div class="prop-label mt-16">Live stats</div>';
       html += '<div class="stat-card">';
       var c = node.computed;
       var isPwrGen = (c.item_out === 'power');
@@ -1668,16 +1814,18 @@ var App = {
       }
       if (c.efficiency !== undefined) {
         var ec = c.efficiency >= 90 ? 'ok' : c.efficiency >= 50 ? 'warn' : 'bad';
-        html += '<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--border)"><span style="font-size:11px;color:var(--text3)">Efficiency</span> <span class="badge '+ec+'">'+c.efficiency+'%</span></div>';
+        html += '<div class="stat-divider"><span class="tip-text">Efficiency</span> <span class="badge '+ec+'">'+c.efficiency+'%</span></div>';
       }
       var pTierDisp = node.props.proliferator_tier;
       if (pTierDisp && pTierDisp !== 'none') {
         var pModeDisp = node.props.proliferator_mode || 'extra_products';
         var pLabel = pTierDisp.toUpperCase() + ' — ' + (pModeDisp === 'speed' ? 'Speed boost' : 'Extra products');
-        html += '<div style="margin-top:6px;padding:4px 8px;background:#1a1200;border:1px solid #92400e;border-radius:4px;font-size:11px;color:#fcd34d">'+escHtml(pLabel)+'</div>';
+        html += '<div class="prolif-banner">'+escHtml(pLabel)+'</div>';
       }
       html += '</div>';
     }
+
+    html += '<button class="btn btn-full mt-12" onclick="App.switchTab(\'stats\')">&#x1F4CA; View in Analysis</button>';
 
     return html;
   },
@@ -1741,14 +1889,14 @@ var App = {
     var pwrBal = totalPower - totalConsumption;
     var pwrBalColor = pwrBal >= 0 ? 'var(--ok)' : 'var(--bad)';
     var pwrBalStr = (pwrBal >= 0 ? '+' : '') + fmtNum(pwrBal, 2) + ' MW';
-    html += '<div style="display:flex;gap:8px;margin-bottom:12px">';
-    html += '<button class="btn" onclick="App.exportFactory(\'copy\')" style="flex:1;justify-content:center">Copy summary</button>';
-    html += '<button class="btn" onclick="App.exportFactory(\'download\')" style="flex:1;justify-content:center">Download .txt</button>';
+    html += '<div class="flex-export-row">';
+    html += '<button class="btn btn-flex1" onclick="App.exportFactory(\'copy\')">Copy summary</button>';
+    html += '<button class="btn btn-flex1" onclick="App.exportFactory(\'download\')">Download .txt</button>';
     html += '</div>';
     html += '<div class="stat-grid">';
-    html += '<div class="stat-card"><div class="sc-title">Generation</div><div class="sc-val" style="color:var(--ok)">'+fmtNum(totalPower,2)+' MW</div></div>';
-    html += '<div class="stat-card"><div class="sc-title">Consumption</div><div class="sc-val" style="color:var(--bad)">'+fmtNum(totalConsumption,2)+' MW</div></div>';
-    html += '<div class="stat-card"><div class="sc-title">Power balance</div><div class="sc-val" style="color:'+pwrBalColor+'">'+pwrBalStr+'</div></div>';
+    html += '<div class="stat-card"><div class="sc-title">Generation</div><div class="sc-val sc-val-ok">'+fmtNum(totalPower,2)+' MW</div></div>';
+    html += '<div class="stat-card"><div class="sc-title">Consumption</div><div class="sc-val sc-val-bad">'+fmtNum(totalConsumption,2)+' MW</div></div>';
+    html += '<div class="stat-card"><div class="sc-title">Power balance</div><div class="sc-val '+(pwrBal >= 0 ? 'sc-val-ok' : 'sc-val-bad')+'">'+pwrBalStr+'</div></div>';
     html += '<div class="stat-card"><div class="sc-title">Total nodes</div><div class="sc-val">'+nodeCount+'</div></div>';
     html += '</div>';
 
@@ -1757,11 +1905,11 @@ var App = {
     } else {
       for (var i = 0; i < alerts.length; i++) {
         var nid = alerts[i].nodeId ? alerts[i].nodeId : '';
-        var clickAttr = nid ? ' style="cursor:pointer" onclick="App.focusNode(\'' + nid + '\')"' : '';
+        var clickAttr = nid ? ' class="alert-click" onclick="App.focusNode(\'' + nid + '\')"' : '';
         html += '<div class="alert-item '+alerts[i].type+'"'+clickAttr+'>';
         html += '<span>'+escHtml(alerts[i].msg)+'</span>';
         if (nid) {
-          html += '<span style="font-size:10px;color:var(--text3);margin-left:auto;padding-left:8px;flex-shrink:0">click to locate</span>';
+          html += '<span class="alert-locate-hint">click to locate</span>';
         }
         html += '</div>';
       }
@@ -1800,27 +1948,26 @@ var App = {
         var netB = itemFlows[b].prod - itemFlows[b].cons;
         return netA - netB;
       });
-      html += '<div class="prop-label" style="margin-top:16px">Item flow summary</div>';
-      html += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-bottom:12px">';
-      html += '<thead><tr style="color:var(--text3)">';
-      html += '<th style="text-align:left;padding:3px 4px;font-weight:500">Item</th>';
-      html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Prod/min</th>';
-      html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Cons/min</th>';
-      html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Net</th>';
+      html += '<div class="prop-label mt-16">Item flow summary</div>';
+      html += '<table class="summary-table">';
+      html += '<thead><tr class="thead-dim">';
+      html += '<th class="th-l">Item</th>';
+      html += '<th class="th-r">Prod/min</th>';
+      html += '<th class="th-r">Cons/min</th>';
+      html += '<th class="th-r">Net</th>';
       html += '</tr></thead><tbody>';
       for (var fk = 0; fk < flowKeys.length; fk++) {
         var fkey = flowKeys[fk];
         var fp = itemFlows[fkey];
         var net = fp.prod - fp.cons;
-        var netColor = net < -0.05 ? 'color:var(--bad)' : (net > 0.05 ? 'color:var(--ok)' : 'color:var(--text3)');
         var netAbsStr = fmtRate(Math.abs(net));
         var netStr = net < -0.05 ? ('-' + netAbsStr) : (net > 0.05 ? ('+' + netAbsStr) : ('~' + netAbsStr));
-        var bgStyle = net < -0.05 ? 'background:rgba(239,68,68,0.07)' : '';
-        html += '<tr style="border-top:1px solid var(--border);' + bgStyle + '">';
-        html += '<td style="padding:3px 4px;color:var(--text)">' + escHtml(itemName(fkey)) + '</td>';
-        html += '<td style="padding:3px 4px;text-align:right;color:var(--ok)">' + (fp.prod > 0 ? fmtRate(fp.prod) : '—') + '</td>';
-        html += '<td style="padding:3px 4px;text-align:right;color:var(--bad)">' + (fp.cons > 0 ? fmtRate(fp.cons) : '—') + '</td>';
-        html += '<td style="padding:3px 4px;text-align:right;' + netColor + '">' + netStr + '</td>';
+        var netClass = net < -0.05 ? 'sc-val-bad' : (net > 0.05 ? 'sc-val-ok' : 'stat-text3');
+        html += '<tr class="tr-border' + (net < -0.05 ? ' ils-row-bad' : '') + '">';
+        html += '<td class="td-item">' + escHtml(itemName(fkey)) + '</td>';
+        html += '<td class="td-prod">' + (fp.prod > 0 ? fmtRate(fp.prod) : '—') + '</td>';
+        html += '<td class="td-cons">' + (fp.cons > 0 ? fmtRate(fp.cons) : '—') + '</td>';
+        html += '<td class="td-right ' + netClass + '">' + netStr + '</td>';
         html += '</tr>';
       }
       html += '</tbody></table>';
@@ -1830,18 +1977,18 @@ var App = {
     var MATRIX_KEYS = ['em_matrix','energy_matrix','structure_matrix','information_matrix','gravity_matrix','universe_matrix'];
     var MATRIX_NAMES_R = {em_matrix:'EM Matrix',energy_matrix:'Energy Matrix',structure_matrix:'Structure Matrix',information_matrix:'Info Matrix',gravity_matrix:'Gravity Matrix',universe_matrix:'Universe Matrix'};
     var MATRIX_COLORS_R = {em_matrix:'#3b82f6',energy_matrix:'#ef4444',structure_matrix:'#ca8a04',information_matrix:'#22c55e',gravity_matrix:'#a78bfa',universe_matrix:'#e2e8f0'};
-    html += '<div class="prop-label" style="margin-top:16px">Research Goal Calculator</div>';
-    html += '<div class="prop-row"><label style="font-size:12px;color:var(--text2);min-width:90px">Technology</label>';
-    html += '<select style="flex:1;padding:4px 6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:11px" onchange="App.setResearchGoal(this.value)">';
+    html += '<div class="prop-label mt-16">Research Goal Calculator</div>';
+    html += '<div class="prop-row"><label class="label-90">Technology</label>';
+    html += '<select class="select-ctrl" onchange="App.setResearchGoal(this.value)">';
     html += '<option value="">— pick a tech —</option>';
     for (var ti = 0; ti < TECH_REQUIREMENTS.length; ti++) {
       var tr = TECH_REQUIREMENTS[ti];
       html += '<option value="'+escHtml(tr.key)+'"'+(State.researchGoal===tr.key?' selected':'')+'>'+escHtml(tr.name)+'</option>';
     }
     html += '</select></div>';
-    html += '<div class="prop-row"><label style="font-size:12px;color:var(--text2);min-width:90px">Target time</label>';
-    html += '<input type="number" min="0.1" step="0.5" value="'+(State.researchTargetHours||2)+'" style="flex:1;padding:4px 6px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:12px" onchange="App.setResearchTargetHours(this.value)">';
-    html += '<span style="font-size:12px;color:var(--text3);margin-left:6px">hours</span></div>';
+    html += '<div class="prop-row"><label class="label-90">Target time</label>';
+    html += '<input type="number" min="0.1" step="0.5" value="'+(State.researchTargetHours||2)+'" class="input-ctrl" onchange="App.setResearchTargetHours(this.value)">';
+    html += '<span class="unit-label-6">hours</span></div>';
     State.researchDeficits = [];
     if (State.researchGoal) {
       var selTech = null;
@@ -1860,12 +2007,12 @@ var App = {
         var tgtHours = State.researchTargetHours || 2;
         var tgtMins = tgtHours * 60;
         var costKeys = Object.keys(selTech.costs);
-        html += '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:8px">';
-        html += '<thead><tr style="color:var(--text3)">';
-        html += '<th style="text-align:left;padding:3px 4px;font-weight:500">Matrix</th>';
-        html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Total need</th>';
-        html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Need/min</th>';
-        html += '<th style="text-align:right;padding:3px 4px;font-weight:500">Have/min</th>';
+        html += '<table class="summary-table mt-8 mb-0">';
+        html += '<thead><tr class="thead-dim">';
+        html += '<th class="th-l">Matrix</th>';
+        html += '<th class="th-r">Total need</th>';
+        html += '<th class="th-r">Need/min</th>';
+        html += '<th class="th-r">Have/min</th>';
         html += '</tr></thead><tbody>';
         var maxShortfall = 0;
         var bottleneckMat = '';
@@ -1876,14 +2023,13 @@ var App = {
           var haveRate = matOut[mk] || 0;
           var deficit = reqRate - haveRate;
           var matColor = MATRIX_COLORS_R[mk] || 'var(--text)';
-          var haveColor = haveRate >= reqRate ? 'var(--ok)' : (haveRate > 0 ? 'var(--warn)' : 'var(--bad)');
-          var rowBg = deficit > 0.01 ? 'background:rgba(239,68,68,0.06)' : '';
+          var haveClass = haveRate >= reqRate ? 'sc-val-ok' : (haveRate > 0 ? 'sc-val-warn' : 'sc-val-bad');
           if (deficit > maxShortfall) { maxShortfall = deficit; bottleneckMat = mk; }
-          html += '<tr style="border-top:1px solid var(--border);'+rowBg+'">';
-          html += '<td style="padding:3px 4px;color:'+matColor+'">'+escHtml(MATRIX_NAMES_R[mk]||mk)+'</td>';
-          html += '<td style="padding:3px 4px;text-align:right;color:var(--text)">'+need.toLocaleString()+'</td>';
-          html += '<td style="padding:3px 4px;text-align:right;color:var(--text2)">'+fmtNum(reqRate,1)+'/min</td>';
-          html += '<td style="padding:3px 4px;text-align:right;color:'+haveColor+'">'+(haveRate>0?fmtNum(haveRate,1)+'/min':'—')+'</td>';
+          html += '<tr class="tr-border' + (deficit > 0.01 ? ' ils-row-bad' : '') + '">';
+          html += '<td class="td-item" style="color:'+matColor+'">'+escHtml(MATRIX_NAMES_R[mk]||mk)+'</td>';
+          html += '<td class="td-right">'+need.toLocaleString()+'</td>';
+          html += '<td class="td-text2">'+fmtNum(reqRate,1)+'/min</td>';
+          html += '<td class="td-right '+haveClass+'">'+(haveRate>0?fmtNum(haveRate,1)+'/min':'—')+'</td>';
           html += '</tr>';
           if (deficit > 0.01) {
             var labRec = RECIPES[mk];
@@ -1893,7 +2039,7 @@ var App = {
               labsNeeded = Math.ceil(deficit / ratePerLab);
             }
             State.researchDeficits.push({item: mk, rate: deficit});
-            html += '<tr><td colspan="4" style="padding:1px 4px 5px 12px;font-size:10px;color:var(--warn)">';
+            html += '<tr><td colspan="4" class="td-warn">';
             html += '↳ +'+labsNeeded+' Lab'+(labsNeeded!==1?'s':'')+' needed (+'+fmtNum(deficit,1)+'/min)';
             html += '</td></tr>';
           }
@@ -1919,23 +2065,23 @@ var App = {
         } else {
           estStr = fmtNum(estTimeMin/1440, 1) + ' days';
         }
-        html += '<div style="margin-top:8px;padding:8px 10px;background:var(--bg4);border-radius:5px;display:flex;gap:16px">';
-        html += '<div style="flex:1"><div style="font-size:10px;color:var(--text3)">At current output</div>';
-        html += '<div style="font-size:15px;font-weight:600;color:var(--text);margin-top:2px">'+escHtml(estStr)+'</div>';
+        html += '<div class="research-summary-card">';
+        html += '<div class="research-summary-col"><div class="research-summary-label">At current output</div>';
+        html += '<div class="research-summary-val">'+escHtml(estStr)+'</div>';
         if (bottleneckMat && !anyZero) {
-          html += '<div style="font-size:10px;color:var(--text3);margin-top:2px">Bottleneck: '+escHtml(MATRIX_NAMES_R[bottleneckMat]||bottleneckMat)+'</div>';
+          html += '<div class="research-summary-note">Bottleneck: '+escHtml(MATRIX_NAMES_R[bottleneckMat]||bottleneckMat)+'</div>';
         }
         html += '</div>';
         if (maxShortfall > 0.01) {
-          html += '<div style="flex:1"><div style="font-size:10px;color:var(--text3)">For '+fmtNum(tgtHours,1)+'hr goal</div>';
-          html += '<div style="font-size:11px;color:var(--warn);margin-top:3px">+'+fmtNum(maxShortfall,1)+'/min needed</div>';
-          html += '<div style="font-size:10px;color:var(--text3);margin-top:1px">of '+escHtml(MATRIX_NAMES_R[bottleneckMat]||bottleneckMat)+'</div>';
+          html += '<div class="research-summary-col"><div class="research-summary-label">For '+fmtNum(tgtHours,1)+'hr goal</div>';
+          html += '<div class="research-summary-warn">+'+fmtNum(maxShortfall,1)+'/min needed</div>';
+          html += '<div class="research-summary-note">of '+escHtml(MATRIX_NAMES_R[bottleneckMat]||bottleneckMat)+'</div>';
           html += '</div>';
         }
         html += '</div>';
         if (State.researchDeficits.length > 0) {
           var nd = State.researchDeficits.length;
-          html += '<button class="btn primary" style="width:100%;justify-content:center;margin-top:6px" onclick="App.buildResearchChains()">Build '+nd+' missing chain'+(nd!==1?'s':'')+'</button>';
+          html += '<button class="btn primary btn-full mt-6" onclick="App.buildResearchChains()">Build '+nd+' missing chain'+(nd!==1?'s':'')+'</button>';
         }
       }
     }
@@ -1953,34 +2099,34 @@ var App = {
       if (mw >= 1000) { return fmtNum(mw / 1000, 2) + ' GW'; }
       return fmtNum(mw, 0) + ' MW';
     };
-    html += '<div class="prop-label" style="margin-top:16px">Dyson Sphere Estimator</div>';
-    html += '<div style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:12px">';
-    html += '<div class="prop-row"><label style="font-size:12px;color:var(--text2);min-width:90px">Luminosity</label>';
-    html += '<input type="number" min="0.1" max="25" step="0.1" value="'+fmtNum(dysonLum,1)+'" style="flex:1;padding:4px 6px;background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:12px" onchange="App.setDysonCalc(\'dysonLuminosity\',this.value)">';
+    html += '<div class="prop-label mt-16">Dyson Sphere Estimator</div>';
+    html += '<div class="dyson-panel">';
+    html += '<div class="prop-row"><label class="label-90">Luminosity</label>';
+    html += '<input type="number" min="0.1" max="25" step="0.1" value="'+fmtNum(dysonLum,1)+'" class="input-ctrl" onchange="App.setDysonCalc(\'dysonLuminosity\',this.value)">';
     html += '</div>';
-    html += '<div style="font-size:10px;color:var(--text3);margin-top:-4px;margin-bottom:8px">M≈0.3 · K≈0.6 · G≈1.0 · F≈1.5 · A≈2.5 · B≈4 · O≈8 · Neutron≈9</div>';
-    html += '<div class="prop-row"><label style="font-size:12px;color:var(--text2);min-width:90px">Swarm %</label>';
-    html += '<input type="range" min="0" max="100" step="1" value="'+dysonSwarmPct+'" style="flex:1" oninput="this.nextElementSibling.textContent=this.value+\'%\'" onchange="App.setDysonCalc(\'dysonSwarmPct\',this.value)">';
-    html += '<span style="font-size:12px;font-weight:500;min-width:36px;text-align:right">'+dysonSwarmPct+'%</span></div>';
-    html += '<div class="prop-row"><label style="font-size:12px;color:var(--text2);min-width:90px">Shell %</label>';
-    html += '<input type="range" min="0" max="100" step="1" value="'+dysonShellPct+'" style="flex:1" oninput="this.nextElementSibling.textContent=this.value+\'%\'" onchange="App.setDysonCalc(\'dysonShellPct\',this.value)">';
-    html += '<span style="font-size:12px;font-weight:500;min-width:36px;text-align:right">'+dysonShellPct+'%</span></div>';
-    html += '<div class="prop-row"><label style="font-size:12px;color:var(--text2);min-width:90px">Sails/min</label>';
-    html += '<input type="number" min="0" step="1" value="'+dysonSailRate+'" style="flex:1;padding:4px 6px;background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:12px" onchange="App.setDysonCalc(\'dysonSailRate\',this.value)">';
+    html += '<div class="dyson-hint">M≈0.3 · K≈0.6 · G≈1.0 · F≈1.5 · A≈2.5 · B≈4 · O≈8 · Neutron≈9</div>';
+    html += '<div class="prop-row"><label class="label-90">Swarm %</label>';
+    html += '<input type="range" min="0" max="100" step="1" value="'+dysonSwarmPct+'" oninput="this.nextElementSibling.textContent=this.value+\'%\'" onchange="App.setDysonCalc(\'dysonSwarmPct\',this.value)">';
+    html += '<span class="range-val">'+dysonSwarmPct+'%</span></div>';
+    html += '<div class="prop-row"><label class="label-90">Shell %</label>';
+    html += '<input type="range" min="0" max="100" step="1" value="'+dysonShellPct+'" oninput="this.nextElementSibling.textContent=this.value+\'%\'" onchange="App.setDysonCalc(\'dysonShellPct\',this.value)">';
+    html += '<span class="range-val">'+dysonShellPct+'%</span></div>';
+    html += '<div class="prop-row"><label class="label-90">Sails/min</label>';
+    html += '<input type="number" min="0" step="1" value="'+dysonSailRate+'" class="input-ctrl" onchange="App.setDysonCalc(\'dysonSailRate\',this.value)">';
     html += '</div>';
-    html += '<div class="prop-row"><label style="font-size:12px;color:var(--text2);min-width:90px">Orbit cap</label>';
-    html += '<input type="number" min="1000" step="1000" value="'+dysonOrbitCap+'" style="flex:1;padding:4px 6px;background:var(--bg);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:12px" onchange="App.setDysonCalc(\'dysonOrbitCap\',this.value)">';
-    html += '<span style="font-size:11px;color:var(--text3);margin-left:4px">sails</span></div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:10px">';
-    html += '<div style="background:var(--bg4);border-radius:4px;padding:6px 8px;text-align:center">';
-    html += '<div style="font-size:10px;color:var(--text3)">Swarm</div>';
-    html += '<div style="font-size:13px;font-weight:600;color:#fbbf24">'+fmtDysonMW(swarmPow)+'</div></div>';
-    html += '<div style="background:var(--bg4);border-radius:4px;padding:6px 8px;text-align:center">';
-    html += '<div style="font-size:10px;color:var(--text3)">Shell</div>';
-    html += '<div style="font-size:13px;font-weight:600;color:#a78bfa">'+fmtDysonMW(shellPow)+'</div></div>';
-    html += '<div style="background:var(--bg4);border:1px solid var(--border2);border-radius:4px;padding:6px 8px;text-align:center">';
-    html += '<div style="font-size:10px;color:var(--text3)">Total</div>';
-    html += '<div style="font-size:13px;font-weight:600;color:var(--ok)">'+fmtDysonMW(totalDysonPow)+'</div></div>';
+    html += '<div class="prop-row"><label class="label-90">Orbit cap</label>';
+    html += '<input type="number" min="1000" step="1000" value="'+dysonOrbitCap+'" class="input-ctrl" onchange="App.setDysonCalc(\'dysonOrbitCap\',this.value)">';
+    html += '<span class="unit-label">sails</span></div>';
+    html += '<div class="dyson-grid">';
+    html += '<div class="dyson-cell">';
+    html += '<div class="dyson-label">Swarm</div>';
+    html += '<div class="dyson-val-gold">'+fmtDysonMW(swarmPow)+'</div></div>';
+    html += '<div class="dyson-cell">';
+    html += '<div class="dyson-label">Shell</div>';
+    html += '<div class="dyson-val-purple">'+fmtDysonMW(shellPow)+'</div></div>';
+    html += '<div class="dyson-cell-total">';
+    html += '<div class="dyson-label">Total</div>';
+    html += '<div class="dyson-val-ok">'+fmtDysonMW(totalDysonPow)+'</div></div>';
     html += '</div>';
     if (dysonSailRate > 0) {
       var sailsLeft = Math.max(0, Math.ceil((1 - dysonSwarmPct / 100) * dysonOrbitCap));
@@ -1995,9 +2141,9 @@ var App = {
       } else {
         timeStr = 'Full swarm in ~' + fmtNum(minsToFull / 1440, 1) + ' days';
       }
-      html += '<div style="margin-top:8px;padding:5px 8px;background:var(--bg4);border-radius:4px;font-size:11px;color:var(--text2)">'+escHtml(timeStr)+' ('+sailsLeft.toLocaleString()+' sails remaining)</div>';
+      html += '<div class="dyson-time-note">'+escHtml(timeStr)+' ('+sailsLeft.toLocaleString()+' sails remaining)</div>';
     }
-    html += '<div style="font-size:10px;color:var(--text3);margin-top:6px">Estimates: Swarm ~360 MW/L at 100%, Shell ~1,500 MW/L at 100%</div>';
+    html += '<div class="dyson-footnote">Estimates: Swarm ~360 MW/L at 100%, Shell ~1,500 MW/L at 100%</div>';
     html += '</div>';
 
     // bottleneck summary
@@ -2012,19 +2158,19 @@ var App = {
       else { bktOk.push(bn.id); }
     }
     State.nodeBuckets = {crit: bktCrit, warn: bktWarn, ok: bktOk};
-    html += '<div class="prop-label" style="margin-top:16px">Bottleneck Summary</div>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px">';
-    html += '<div class="stat-card" style="cursor:pointer;text-align:center;padding:8px 6px" onclick="App.highlightBucket(\'crit\')">';
-    html += '<div style="font-size:20px;font-weight:600;color:var(--bad)">'+bktCrit.length+'</div>';
-    html += '<div style="font-size:10px;margin-top:3px"><span class="badge bad">&lt;50%</span></div>';
+    html += '<div class="prop-label mt-16">Bottleneck Summary</div>';
+    html += '<div class="stat-grid">';
+    html += '<div class="stat-card stat-card-sm" onclick="App.highlightBucket(\'crit\')">';
+    html += '<div class="sc-val-lg sc-val-bad">'+bktCrit.length+'</div>';
+    html += '<div class="sc-sub-mt"><span class="badge bad">&lt;50%</span></div>';
     html += '</div>';
-    html += '<div class="stat-card" style="cursor:pointer;text-align:center;padding:8px 6px" onclick="App.highlightBucket(\'warn\')">';
-    html += '<div style="font-size:20px;font-weight:600;color:var(--warn)">'+bktWarn.length+'</div>';
-    html += '<div style="font-size:10px;margin-top:3px"><span class="badge warn">50–89%</span></div>';
+    html += '<div class="stat-card stat-card-sm" onclick="App.highlightBucket(\'warn\')">';
+    html += '<div class="sc-val-lg sc-val-warn">'+bktWarn.length+'</div>';
+    html += '<div class="sc-sub-mt"><span class="badge warn">50–89%</span></div>';
     html += '</div>';
-    html += '<div class="stat-card" style="cursor:pointer;text-align:center;padding:8px 6px" onclick="App.highlightBucket(\'ok\')">';
-    html += '<div style="font-size:20px;font-weight:600;color:var(--ok)">'+bktOk.length+'</div>';
-    html += '<div style="font-size:10px;margin-top:3px"><span class="badge ok">≥90%</span></div>';
+    html += '<div class="stat-card stat-card-sm" onclick="App.highlightBucket(\'ok\')">';
+    html += '<div class="sc-val-lg sc-val-ok">'+bktOk.length+'</div>';
+    html += '<div class="sc-sub-mt"><span class="badge ok">≥90%</span></div>';
     html += '</div>';
     html += '</div>';
 
@@ -2033,7 +2179,7 @@ var App = {
     if (State.planets.length > 0 && State.currentPlanet !== 'all') {
       _bnLabel += ' — ' + State.currentPlanet;
     }
-    html += '<div class="prop-label" style="margin-top:16px">'+escHtml(_bnLabel)+'</div>';
+    html += '<div class="prop-label mt-16">'+escHtml(_bnLabel)+'</div>';
     var _bnNodes = Object.values(State.nodes);
     if (State.planets.length > 0 && State.currentPlanet !== 'all') {
       _bnNodes = _bnNodes.filter(function(n) {
@@ -2046,22 +2192,70 @@ var App = {
       var label = node.props.label || def.label;
       var eff = c.efficiency !== undefined ? c.efficiency : null;
       var effClass = eff !== null ? (eff >= 90 ? 'ok' : eff >= 50 ? 'warn' : 'bad') : '';
-      html += '<div class="stat-card" style="cursor:pointer" onclick="App.selectNode(\''+node.id+'\');App.switchTab(\'props\')">';
+      html += '<div class="stat-card stat-card-click" onclick="App.selectNode(\''+node.id+'\');App.switchTab(\'props\')">';
       html += '<div class="sc-title">'+def.icon+' '+escHtml(label);
       if (eff !== null) {
         html += ' <span class="badge '+effClass+'">'+eff+'%</span>';
       }
       if (State.planets.length > 0 && State.currentPlanet === 'all' && node.props.planet) {
-        html += ' <span style="font-size:9px;color:var(--text3);margin-left:2px">'+escHtml(node.props.planet)+'</span>';
+        html += ' <span class="planet-note">'+escHtml(node.props.planet)+'</span>';
       }
       html += '</div>';
       if (c.output_per_min !== undefined && c.item_out !== 'power') {
-        html += '<div class="sc-val" style="font-size:14px">'+fmtRate(c.output_per_min)+'/min</div>';
+        html += '<div class="sc-val sc-val-md">'+fmtRate(c.output_per_min)+'/min</div>';
       } else if (c.output_per_min !== undefined && c.item_out === 'power') {
-        html += '<div class="sc-val" style="font-size:14px">'+fmtNum(c.output_per_min,2)+' MW</div>';
+        html += '<div class="sc-val sc-val-md">'+fmtNum(c.output_per_min,2)+' MW</div>';
       }
       html += '</div>';
     });
+
+    // Interstellar logistics summary (only when planets are set up and ILS nodes exist)
+    if (State.planets.length > 0) {
+      var ilsRows = {};
+      Object.values(State.nodes).forEach(function(nd) {
+        if (nd.type !== 'ils_station' && nd.type !== 'pls_station') { return; }
+        var item = nd.props.item;
+        if (!item) { return; }
+        if (!ilsRows[item]) { ilsRows[item] = {supply:0, demand:0, exportPlanets:[], importPlanets:[]}; }
+        var cnt = nd.props.count || 1;
+        var rate = (nd.props.rate || 0) * cnt;
+        if (nd.props.mode === 'export' && nd.computed) {
+          ilsRows[item].supply += nd.computed.effective_input || 0;
+          if (nd.props.planet && ilsRows[item].exportPlanets.indexOf(nd.props.planet) === -1) {
+            ilsRows[item].exportPlanets.push(nd.props.planet);
+          }
+        } else if (nd.props.mode === 'import') {
+          ilsRows[item].demand += rate;
+          if (nd.props.planet && ilsRows[item].importPlanets.indexOf(nd.props.planet) === -1) {
+            ilsRows[item].importPlanets.push(nd.props.planet);
+          }
+        }
+      });
+      var ilsItemKeys = Object.keys(ilsRows);
+      if (ilsItemKeys.length > 0) {
+        html += '<div class="prop-label mt-16">Interstellar Logistics</div>';
+        html += '<table class="summary-table">';
+        html += '<thead><tr class="thead-dim">';
+        html += '<th class="th-l">Item</th>';
+        html += '<th class="th-r">Supply</th>';
+        html += '<th class="th-r">Demand</th>';
+        html += '<th class="th-r">Balance</th>';
+        html += '</tr></thead><tbody>';
+        for (var ilsRi = 0; ilsRi < ilsItemKeys.length; ilsRi++) {
+          var ilsKey = ilsItemKeys[ilsRi];
+          var ilsRow = ilsRows[ilsKey];
+          var ilsNet = ilsRow.supply - ilsRow.demand;
+          var ilsNetStr = ilsNet >= -0.05 ? ('+' + fmtRate(ilsNet)) : ('-' + fmtRate(Math.abs(ilsNet)));
+          html += '<tr class="tr-border' + (ilsNet < -0.05 ? ' ils-row-bad' : '') + '">';
+          html += '<td class="td-item">' + escHtml(itemName(ilsKey)) + '</td>';
+          html += '<td class="td-prod">' + (ilsRow.supply > 0 ? fmtRate(ilsRow.supply) + '/min' : '—') + '</td>';
+          html += '<td class="td-cons">' + (ilsRow.demand > 0 ? fmtRate(ilsRow.demand) + '/min' : '—') + '</td>';
+          html += '<td class="td-text2 ' + (ilsNet >= -0.05 ? 'sc-val-ok' : 'sc-val-bad') + '">' + ilsNetStr + '/min</td>';
+          html += '</tr>';
+        }
+        html += '</tbody></table>';
+      }
+    }
 
     return html;
   },
@@ -2087,7 +2281,7 @@ var App = {
     items.sort(function(a, b) { return a.name < b.name ? -1 : a.name > b.name ? 1 : 0; });
 
     var selName = BuildState.product && ITEMS[BuildState.product] ? (ITEMS[BuildState.product].icon || '') + ' ' + ITEMS[BuildState.product].name : '';
-    var html = '<div class="prop-group"><strong>Auto Chain Builder</strong></div>';
+    var html = '<div class="prop-group"><strong>Auto Chain Builder</strong><div class="build-hint">Pick an end product and target rate — the chain builder places all required machines and connects them automatically.</div></div>';
     html += '<div class="prop-label">End product</div>';
     html += '<div class="search-select-wrap">';
     html += '<input type="text" id="build-search" placeholder="Search items..." autocomplete="off" value="' + escHtml(selName) + '">';
@@ -2102,10 +2296,10 @@ var App = {
     html += '</div>';
 
     html += '<div class="prop-label">Target /min</div>';
-    html += '<div class="prop-row"><input type="number" id="build-rate" min="0.01" step="1" value="' + BuildState.targetRate + '" style="width:100%"></div>';
+    html += '<div class="prop-row"><input type="number" id="build-rate" min="0.01" step="1" value="' + BuildState.targetRate + '"></div>';
 
     html += '<div class="prop-label">Belt tier</div>';
-    html += '<div class="prop-row"><select id="build-belt" style="width:100%">';
+    html += '<div class="prop-row"><select id="build-belt">';
     var beltOpts = [{v:'mk1',l:'Mk.I — 360/min'},{v:'mk2',l:'Mk.II — 720/min'},{v:'mk3',l:'Mk.III — 1800/min'}];
     for (var bi = 0; bi < beltOpts.length; bi++) {
       html += '<option value="' + beltOpts[bi].v + '"' + (BuildState.beltTier === beltOpts[bi].v ? ' selected' : '') + '>' + beltOpts[bi].l + '</option>';
@@ -2113,7 +2307,7 @@ var App = {
     html += '</select></div>';
 
     html += '<div class="prop-label">Sorter tier</div>';
-    html += '<div class="prop-row"><select id="build-sorter" style="width:100%">';
+    html += '<div class="prop-row"><select id="build-sorter">';
     var sorterOpts = [{v:'mk1',l:'Mk.I'},{v:'mk2',l:'Mk.II'},{v:'mk3',l:'Mk.III'}];
     for (var si = 0; si < sorterOpts.length; si++) {
       html += '<option value="' + sorterOpts[si].v + '"' + (BuildState.sorterTier === sorterOpts[si].v ? ' selected' : '') + '>' + sorterOpts[si].l + '</option>';
@@ -2121,14 +2315,14 @@ var App = {
     html += '</select></div>';
 
     html += '<div class="prop-label">Assembler tier</div>';
-    html += '<div class="prop-row"><select id="build-assembler" style="width:100%">';
+    html += '<div class="prop-row"><select id="build-assembler">';
     var asmOpts = [{v:'mk1',l:'Mk.I (0.75×)'},{v:'mk2',l:'Mk.II (1.0×)'},{v:'mk3',l:'Mk.III (1.5×)'}];
     for (var ai = 0; ai < asmOpts.length; ai++) {
       html += '<option value="' + asmOpts[ai].v + '"' + (BuildState.assemblerTier === asmOpts[ai].v ? ' selected' : '') + '>' + asmOpts[ai].l + '</option>';
     }
     html += '</select></div>';
 
-    html += '<div class="prop-row" style="margin-top:10px"><button class="btn" style="width:100%" onclick="App.submitAutoChain()">Build Chain</button></div>';
+    html += '<div class="prop-row mt-10"><button class="btn w-full" onclick="App.submitAutoChain()">Build Chain</button></div>';
     html += '<div id="build-result"></div>';
     return html;
   },
@@ -2340,7 +2534,7 @@ var App = {
 
   propProliferator: function(node) {
     var t = node.props.proliferator_tier || 'none';
-    var html = '<div class="prop-label" style="margin-top:10px">Proliferator</div>';
+    var html = '<div class="prop-label mt-10">Proliferator</div>';
     html += this.propSelect(node, 'proliferator_tier', 'Tier', [
       {v:'none',l:'None'},{v:'mk1',l:'Mk.I'},{v:'mk2',l:'Mk.II'},{v:'mk3',l:'Mk.III'}
     ]);
@@ -2358,26 +2552,26 @@ var App = {
       var pMode = node.props.proliferator_mode || 'extra_products';
       var roiTiers = ['mk1','mk2','mk3'];
       var roiLabels = {mk1:'Mk.I', mk2:'Mk.II', mk3:'Mk.III'};
-      html += '<div style="margin-top:8px;padding:6px 8px;background:var(--bg4);border-radius:5px">';
-      html += '<div style="font-size:10px;color:var(--text3);margin-bottom:5px;font-weight:500">ROI vs no proliferators ('+cnt+' machines)</div>';
-      html += '<table style="width:100%;border-collapse:collapse;font-size:10px">';
-      html += '<tr style="color:var(--text3)"><th style="text-align:left;padding:2px 4px;font-weight:400">Tier</th>';
-      html += '<th style="text-align:center;padding:2px 4px;font-weight:400">Extra Prod.</th>';
-      html += '<th style="text-align:center;padding:2px 4px;font-weight:400">Speed</th></tr>';
+      html += '<div class="roi-wrap">';
+      html += '<div class="stat-section-hdr">ROI vs no proliferators ('+cnt+' machines)</div>';
+      html += '<table class="roi-table">';
+      html += '<tr class="text3-row"><th class="th-lw">Tier</th>';
+      html += '<th class="th-cw">Extra Prod.</th>';
+      html += '<th class="th-cw">Speed</th></tr>';
       for (var roi = 0; roi < roiTiers.length; roi++) {
         var rt = roiTiers[roi];
         var saveExt = cnt - Math.ceil(cnt / extraMults[rt]);
         var saveSpd = cnt - Math.ceil(cnt / speedMults[rt]);
         var hilExt = (t === rt && pMode === 'extra_products');
         var hilSpd = (t === rt && pMode === 'speed');
-        html += '<tr style="border-top:1px solid var(--border)">';
-        html += '<td style="padding:3px 4px;color:var(--text3)">'+roiLabels[rt]+'</td>';
-        html += '<td style="padding:3px 4px;text-align:center;color:'+(hilExt?'var(--ok)':'var(--text2)')+(hilExt?';font-weight:600':'')+'">−'+saveExt+'</td>';
-        html += '<td style="padding:3px 4px;text-align:center;color:'+(hilSpd?'var(--ok)':'var(--text2)')+(hilSpd?';font-weight:600':'')+'">−'+saveSpd+'</td>';
+        html += '<tr class="tr-border">';
+        html += '<td class="td-label">'+roiLabels[rt]+'</td>';
+        html += '<td class="td-center '+(hilExt?'td-hi-ok':'td-hi-dim')+'">−'+saveExt+'</td>';
+        html += '<td class="td-center '+(hilSpd?'td-hi-ok':'td-hi-dim')+'">−'+saveSpd+'</td>';
         html += '</tr>';
       }
       html += '</table>';
-      html += '<div style="font-size:9px;color:var(--text3);margin-top:4px">Machines removable while maintaining current output</div>';
+      html += '<div class="ns-note-4">Machines removable while maintaining current output</div>';
       html += '</div>';
     }
     return html;
@@ -2397,16 +2591,16 @@ var App = {
     var listId  = 'recipe-list-'  + node.id + '-' + key;
     // Store the key name inside the JSON so filterRecipeList calls setProp with the right key
     var optJson = JSON.stringify({key: key, opts: options.map(function(o){ return {v:String(o.v), l:o.l, name:o.name||''}; })});
-    var html = '<div class="prop-row" style="flex-direction:column;align-items:stretch;gap:4px">';
-    html += '<label style="margin-bottom:2px">'+label+'</label>';
-    html += '<div style="position:relative">';
+    var html = '<div class="prop-row prop-row-col">';
+    html += '<label class="mb-2">'+label+'</label>';
+    html += '<div class="pos-rel">';
     html += '<input type="text" id="'+inputId+'" placeholder="Search..." autocomplete="off"';
     html += ' value="'+escHtml(currentLabel)+'"';
-    html += ' style="width:100%"';
+    html += ' class="w-full"';
     html += ' oninput="App.filterRecipeList(\''+inputId+'\',\''+listId+'\',this.value)"';
     html += ' onfocus="App.filterRecipeList(\''+inputId+'\',\''+listId+'\',\'\')"';
     html += ' onblur="setTimeout(function(){var l=document.getElementById(\''+listId+'\');if(l)l.style.display=\'none\';},200)">';
-    html += '<div id="'+listId+'" style="display:none;position:absolute;top:100%;left:0;z-index:500;background:var(--bg2);border:1px solid var(--border2);border-radius:6px;max-height:200px;overflow-y:auto;width:100%;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.6)"></div>';
+    html += '<div id="'+listId+'" class="recipe-dropdown" style="display:none"></div>';
     html += '</div>';
     html += '<script type="application/json" id="recipe-opts-'+node.id+'-'+key+'">'+optJson+'<' + '/script>';
     html += '</div>';
@@ -2452,7 +2646,7 @@ var App = {
     for (var i = 0; i < filtered.length; i++) {
       (function(v, l) {
         var item = document.createElement('div');
-        item.style.cssText = 'padding:6px 10px;cursor:pointer;font-size:11px;color:var(--text);border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
+        item.className = 'recipe-list-item';
         item.textContent = l;
         item.addEventListener('mousedown', function(e) {
           e.preventDefault();
@@ -2843,7 +3037,10 @@ var App = {
 
     wrap.addEventListener('wheel', function(e) {
       e.preventDefault();
-      var factor = e.deltaY < 0 ? 1.1 : 0.9;
+      var delta = e.deltaY;
+      // line-mode devices (most mice) report ~3 lines; pixel-mode trackpads report raw pixels
+      var normalizedDelta = e.deltaMode === 1 ? delta * 20 : delta;
+      var factor = Math.pow(0.999, normalizedDelta);
       var rect = wrap.getBoundingClientRect();
       var mouseX = e.clientX - rect.left;
       var mouseY = e.clientY - rect.top;
@@ -3477,7 +3674,7 @@ var App = {
   showToast: function(msg) {
     var toast = document.createElement('div');
     toast.textContent = msg;
-    toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e3a5f;border:1px solid #3b82f6;color:#93c5fd;padding:8px 16px;border-radius:6px;font-size:13px;z-index:3000;pointer-events:none';
+    toast.className = 'toast-msg';
     document.body.appendChild(toast);
     setTimeout(function() { if (toast.parentNode) { toast.parentNode.removeChild(toast); } }, 2000);
   },
@@ -3546,6 +3743,26 @@ var App = {
     document.getElementById('file-input').click();
   },
 
+  loadExample: function(idx) {
+    var ex = EXAMPLE_FACTORIES[idx];
+    if (!ex) { return; }
+    if (!confirm('Load "' + ex.name + '"? This will clear the current canvas.')) { return; }
+    var self = this;
+    this.clearAll(true);
+    State.nodes = JSON.parse(JSON.stringify(ex.nodes));
+    State.edges = JSON.parse(JSON.stringify(ex.edges));
+    State.nextId = ex.nextId || 100;
+    State.planets = (ex.planets || []).slice();
+    State.currentPlanet = 'all';
+    Object.values(State.nodes).forEach(function(node) { self.renderNode(node); });
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+    this.renderPlanetBar();
+    this.applyPlanetFilter();
+    this.resetView();
+  },
+
   onFileLoad: function(e) {
     var self = this;
     var file = e.target.files[0];
@@ -3584,23 +3801,39 @@ var App = {
     if (!bar) { return; }
     bar.style.display = 'flex';
     var cur = State.currentPlanet;
-    var html = '<span style="font-size:11px;color:var(--text3);flex-shrink:0;margin-right:2px">Planets:</span>';
+    var allNodes = Object.values(State.nodes);
+    var html = '<span class="planet-bar-label">Planets:</span>';
     if (State.planets.length > 0) {
-      html += '<span class="planet-chip'+(cur==='all'?' active':'')+'" onclick="App.setPlanet(\'all\')">All</span>';
+      var allCount = allNodes.length;
+      html += '<span class="planet-chip'+(cur==='all'?' active':'')+'" onclick="App.setPlanet(\'all\')">All <span class="planet-count">('+allCount+')</span></span>';
       for (var i = 0; i < State.planets.length; i++) {
         var name = State.planets[i];
+        var nodeCount = allNodes.filter(function(n) { return n.props.planet === name; }).length;
         html += '<span class="planet-chip'+(cur===name?' active':'')+'" onclick="App.setPlanetByIndex('+i+')">';
-        html += escHtml(name);
-        html += ' <span style="opacity:0.55;font-size:13px;line-height:1;cursor:pointer" onclick="event.stopPropagation();App.deletePlanetByIndex('+i+')">&times;</span>';
+        html += escHtml(name) + ' <span class="planet-count">('+nodeCount+')</span>';
+        html += ' <span class="planet-del" onclick="event.stopPropagation();App.deletePlanetByIndex('+i+')">&times;</span>';
         html += '</span>';
       }
     }
-    html += '<button class="btn" style="font-size:11px;padding:3px 8px;flex-shrink:0" onclick="App.addPlanet()">+ Planet</button>';
+    html += '<button class="btn planet-add-btn" onclick="App.addPlanet()">+ Planet</button>';
     bar.innerHTML = html;
   },
 
   addPlanet: function() {
-    var name = prompt('Planet name:');
+    // First time: name the current planet before adding a second one
+    if (State.planets.length === 0) {
+      var curName = prompt('Name your starting planet (all existing nodes will be assigned to it):');
+      if (!curName || !curName.trim()) { return; }
+      curName = curName.trim();
+      Object.values(State.nodes).forEach(function(n) {
+        if (!n.props.planet) { n.props.planet = curName; }
+      });
+      State.planets.push(curName);
+      State.currentPlanet = curName;
+      this.renderPlanetBar();
+      this.applyPlanetFilter();
+    }
+    var name = prompt('New planet name:');
     if (!name || !name.trim()) { return; }
     name = name.trim();
     if (State.planets.indexOf(name) !== -1) {
@@ -3643,9 +3876,10 @@ var App = {
     Object.values(State.nodes).forEach(function(n) {
       var el = document.getElementById('node_' + n.id);
       if (!el) { return; }
-      var onCur = (cur === 'all' || !(n.props.planet) || n.props.planet === cur);
-      el.style.opacity = onCur ? '' : '0.15';
-      el.style.pointerEvents = onCur ? '' : 'none';
+      var onCur = (cur === 'all' || !n.props.planet || n.props.planet === cur);
+      el.style.display = onCur ? '' : 'none';
+      el.style.opacity = '';
+      el.style.pointerEvents = '';
     });
   },
 

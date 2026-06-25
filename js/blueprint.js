@@ -115,47 +115,51 @@ function parseBinary(buffer) {
   var view = new DataView(buffer);
   var off = 0;
 
-  // skip 7 int32 header fields (28 bytes), then read areaCount
-  off += 4 + 4 + 4 + 4 + 4 + 4 + 4;
-  var areaCount = view.getInt8(off); off += 1;
+  try {
+    // skip 7 int32 header fields (28 bytes), then read areaCount
+    off += 4 + 4 + 4 + 4 + 4 + 4 + 4;
+    var areaCount = view.getInt8(off); off += 1;
 
-  // Each area is 14 bytes
-  off += areaCount * 14;
+    // Each area is 14 bytes
+    off += areaCount * 14;
 
-  var buildingCount = view.getInt32(off, true); off += 4;
+    var buildingCount = view.getInt32(off, true); off += 4;
 
-  var buildings = [];
-  for (var i = 0; i < buildingCount; i++) {
-    off += 4; // index (int32)
-    off += 1; // areaIndex (int8)
+    var buildings = [];
+    for (var i = 0; i < buildingCount; i++) {
+      off += 4; // index (int32)
+      off += 1; // areaIndex (int8)
 
-    var localOffX = view.getFloat32(off, true); off += 4;
-    off += 4; // localOffY (height, not needed)
-    var localOffZ = view.getFloat32(off, true); off += 4;
-    off += 4 + 4 + 4; // localOff2 XYZ
-    off += 4 + 4;     // yaw, yaw2
+      var localOffX = view.getFloat32(off, true); off += 4;
+      off += 4; // localOffY (height, not needed)
+      var localOffZ = view.getFloat32(off, true); off += 4;
+      off += 4 + 4 + 4; // localOff2 XYZ
+      off += 4 + 4;     // yaw, yaw2
 
-    var itemId   = view.getInt16(off, true); off += 2;
-    off += 2; // modelIndex
-    off += 4; // outputObjIdx
-    off += 4; // inputObjIdx
-    off += 1 + 1 + 1 + 1; // outputToSlot, inputFromSlot, outputFromSlot, inputToSlot
-    off += 1 + 1; // outputOffset, inputOffset
+      var itemId   = view.getInt16(off, true); off += 2;
+      off += 2; // modelIndex
+      off += 4; // outputObjIdx
+      off += 4; // inputObjIdx
+      off += 1 + 1 + 1 + 1; // outputToSlot, inputFromSlot, outputFromSlot, inputToSlot
+      off += 1 + 1; // outputOffset, inputOffset
 
-    var recipeId = view.getInt16(off, true); off += 2;
-    off += 2; // filterId
-    var paramCount = view.getInt16(off, true); off += 2;
-    off += paramCount * 2; // parameters
+      var recipeId = view.getInt16(off, true); off += 2;
+      off += 2; // filterId
+      var paramCount = view.getInt16(off, true); off += 2;
+      off += paramCount * 2; // parameters
 
-    buildings.push({
-      itemId:    itemId,
-      recipeId:  recipeId,
-      localOffX: localOffX,
-      localOffZ: localOffZ
-    });
+      buildings.push({
+        itemId:    itemId,
+        recipeId:  recipeId,
+        localOffX: localOffX,
+        localOffZ: localOffZ
+      });
+    }
+
+    return buildings;
+  } catch (e) {
+    throw new Error('Parse error at byte ' + off + ' of ' + buffer.byteLength + ': ' + e.message);
   }
-
-  return buildings;
 }
 
 function parseBlueprintString(str) {
@@ -177,7 +181,7 @@ function parseBlueprintString(str) {
 
     var binary;
     try {
-      binary = atob(b64);
+      binary = window.atob(b64);
     } catch (e) {
       return reject(new Error('Failed to decode base64 data: ' + e.message));
     }
