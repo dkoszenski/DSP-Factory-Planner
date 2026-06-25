@@ -309,3 +309,4 @@ header .subtitle{font-size:12px;color:var(--text3)}
 .td-hi-ok{color:var(--ok);font-weight:600}
 .td-hi-dim{color:var(--text2)}
 .text-right{text-align:right}
+.planet-name-input{padding:3px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:12px;width:160px}

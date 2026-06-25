@@ -3803,6 +3803,16 @@ var App = {
     var cur = State.currentPlanet;
     var allNodes = Object.values(State.nodes);
     var html = '<span class="planet-bar-label">Planets:</span>';
+    if (State.planetNaming) {
+      var ph = State.planetNaming === 'first' ? 'Name this planet...' : 'New planet name...';
+      html += '<input id="planet-name-input" type="text" class="planet-name-input" placeholder="'+escHtml(ph)+'" onkeydown="if(event.key===\'Enter\')App.confirmAddPlanet();else if(event.key===\'Escape\')App.cancelAddPlanet()">';
+      html += '<button class="btn planet-add-btn" onclick="App.confirmAddPlanet()">OK</button>';
+      html += '<button class="btn planet-add-btn" onclick="App.cancelAddPlanet()">Cancel</button>';
+      bar.innerHTML = html;
+      var inp = document.getElementById('planet-name-input');
+      if (inp) { inp.focus(); }
+      return;
+    }
     if (State.planets.length > 0) {
       var allCount = allNodes.length;
       html += '<span class="planet-chip'+(cur==='all'?' active':'')+'" onclick="App.setPlanet(\'all\')">All <span class="planet-count">('+allCount+')</span></span>';
@@ -3820,29 +3830,41 @@ var App = {
   },
 
   addPlanet: function() {
-    // First time: name the current planet before adding a second one
-    if (State.planets.length === 0) {
-      var curName = prompt('Name your starting planet (all existing nodes will be assigned to it):');
-      if (!curName || !curName.trim()) { return; }
-      curName = curName.trim();
+    State.planetNaming = (State.planets.length === 0) ? 'first' : 'new';
+    this.renderPlanetBar();
+  },
+
+  confirmAddPlanet: function() {
+    var inp = document.getElementById('planet-name-input');
+    if (!inp) { return; }
+    var name = inp.value.trim();
+    if (!name) { this.cancelAddPlanet(); return; }
+    if (State.planetNaming === 'first') {
       Object.values(State.nodes).forEach(function(n) {
-        if (!n.props.planet) { n.props.planet = curName; }
+        if (!n.props.planet) { n.props.planet = name; }
       });
-      State.planets.push(curName);
-      State.currentPlanet = curName;
+      State.planets.push(name);
+      State.currentPlanet = name;
+      State.planetNaming = 'new';
       this.renderPlanetBar();
       this.applyPlanetFilter();
+      return;
     }
-    var name = prompt('New planet name:');
-    if (!name || !name.trim()) { return; }
-    name = name.trim();
     if (State.planets.indexOf(name) !== -1) {
-      alert('A planet named "' + name + '" already exists.');
+      inp.style.borderColor = 'var(--bad)';
+      inp.title = 'A planet named "' + name + '" already exists.';
+      inp.focus();
       return;
     }
     State.planets.push(name);
+    State.planetNaming = null;
     this.renderPlanetBar();
     this.setPlanet(name);
+  },
+
+  cancelAddPlanet: function() {
+    State.planetNaming = null;
+    this.renderPlanetBar();
   },
 
   setPlanetByIndex: function(idx) {
@@ -3900,6 +3922,7 @@ var App = {
     State.multiSelected = {};
     State.planets = [];
     State.currentPlanet = 'all';
+    State.planetNaming = null;
     this.renderPlanetBar();
     this.renderEdges();
     this.renderSidebar();

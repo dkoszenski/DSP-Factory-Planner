@@ -24,7 +24,8 @@ var State = {
   dysonSailRate: 0,
   dysonOrbitCap: 10000,
   planets: [],
-  currentPlanet: 'all'
+  currentPlanet: 'all',
+  planetNaming: null
 };
 
 export { State };
