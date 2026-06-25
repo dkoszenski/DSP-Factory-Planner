@@ -1222,6 +1222,9 @@ var App = {
 
       var fromRect = fromEl.getBoundingClientRect();
       var toRect = toEl.getBoundingClientRect();
+      // Skip edges whose endpoints are hidden (display:none nodes return zero rects)
+      if (fromRect.width === 0 && fromRect.height === 0) { return; }
+      if (toRect.width === 0 && toRect.height === 0) { return; }
       var wrapRect = document.getElementById('canvas-wrap').getBoundingClientRect();
 
       var x1 = fromRect.left + fromRect.width / 2 - wrapRect.left;
