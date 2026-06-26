@@ -283,12 +283,7 @@ var App = {
       return null;
     }
 
-    // PLS / ILS: only accept input in export (sink) mode
     if (toType === 'pls_station' || toType === 'ils_station') {
-      if ((toNode.props.mode || 'import') === 'import') {
-        var stationType = toType === 'pls_station' ? 'PLS' : 'ILS';
-        return stationType + ' Station is in Import mode — switch to Export mode to accept inputs';
-      }
       return null;
     }
 
@@ -625,14 +620,24 @@ var App = {
         if (!srcNode || !srcNode.computed) {
           return;
         }
-        var ikey = srcNode.computed.item_out || srcNode.computed.item || null;
-        var srcOutput = srcNode.computed.output_per_min || 0;
+        var ikey, srcOutput;
+        if (srcNode.computed.portOutputs && srcNode.computed.portOutputs[e.from_port]) {
+          var po2 = srcNode.computed.portOutputs[e.from_port];
+          ikey = po2.item;
+          srcOutput = po2.rate || 0;
+        } else {
+          ikey = srcNode.computed.item_out || srcNode.computed.item || null;
+          srcOutput = srcNode.computed.output_per_min || 0;
+        }
         if (!ikey || srcOutput <= 0) {
           return;
         }
 
-        // Find all edges leaving this source node (all its consumers)
+        // For per-port output nodes (ILS import), only split among consumers of the same port
         var consumerEdges = State.edges.filter(function(ce) {
+          if (srcNode.computed.portOutputs) {
+            return ce.from_node === e.from_node && ce.from_port === e.from_port;
+          }
           return ce.from_node === e.from_node;
         });
 
@@ -813,11 +818,13 @@ var App = {
         var ilsExportMap = {};
         for (var ei = 0; ei < ilsKeys.length; ei++) {
           var en = State.nodes[ilsKeys[ei]];
-          if ((en.type === 'ils_station' || en.type === 'pls_station') && en.props.mode === 'export' && en.computed) {
-            var eitem = en.props.item;
-            if (eitem) {
+          if ((en.type === 'ils_station' || en.type === 'pls_station') && en.computed && en.computed.exports) {
+            var enExps = en.computed.exports;
+            var enExpKeys = Object.keys(enExps);
+            for (var eki = 0; eki < enExpKeys.length; eki++) {
+              var eitem = enExpKeys[eki];
               if (!ilsExportMap[eitem]) { ilsExportMap[eitem] = 0; }
-              ilsExportMap[eitem] += en.computed.effective_input || 0;
+              ilsExportMap[eitem] += enExps[eitem] || 0;
             }
           }
         }
@@ -966,6 +973,47 @@ var App = {
       // skip normal stats and output port rendering, already done above
       html += '</div>';
       return html;
+    } else if (node.type === 'ils_station' || node.type === 'pls_station') {
+      var ilsMax = node.type === 'ils_station' ? 5 : 3;
+      var usedInILS = {}, usedOutILS = {};
+      State.edges.forEach(function(e) {
+        if (e.to_node === node.id) { usedInILS[e.to_port] = true; }
+        if (e.from_node === node.id) { usedOutILS[e.from_port] = true; }
+      });
+      var inKeysILS = Object.keys(usedInILS).sort();
+      var outKeysILS = Object.keys(usedOutILS).sort();
+      var totalUsedILS = inKeysILS.length + outKeysILS.length;
+      for (var ixi = 0; ixi < inKeysILS.length; ixi++) {
+        html += '<div class="port-row">';
+        html += '<div class="port input connected" id="port_'+node.id+'_'+inKeysILS[ixi]+'" data-node="'+node.id+'" data-port="'+inKeysILS[ixi]+'" data-dir="in"></div>';
+        html += '<span class="port-label port-label-sm">Export '+(ixi+1)+'</span>';
+        html += '</div>';
+      }
+      if (totalUsedILS < ilsMax) {
+        var nxIn = 0;
+        while (usedInILS['in_'+nxIn]) { nxIn++; }
+        html += '<div class="port-row">';
+        html += '<div class="port input" id="port_'+node.id+'_in_'+nxIn+'" data-node="'+node.id+'" data-port="in_'+nxIn+'" data-dir="in"></div>';
+        html += '<span class="port-label '+(inKeysILS.length===0?'port-label-sm':'port-label-dim')+'">'+(inKeysILS.length===0?'Export':'+ Export')+'</span>';
+        html += '</div>';
+      }
+      html += '<div id="node_stats_'+node.id+'"></div>';
+      for (var oxi = 0; oxi < outKeysILS.length; oxi++) {
+        html += '<div class="port-row port-row-out">';
+        html += '<span class="port-label port-label-right">Import '+(oxi+1)+'</span>';
+        html += '<div class="port output connected port-no-shrink" id="port_'+node.id+'_'+outKeysILS[oxi]+'" data-node="'+node.id+'" data-port="'+outKeysILS[oxi]+'" data-dir="out"></div>';
+        html += '</div>';
+      }
+      if (totalUsedILS < ilsMax) {
+        var nxOut = 0;
+        while (usedOutILS['out_'+nxOut]) { nxOut++; }
+        html += '<div class="port-row port-row-out">';
+        html += '<span class="port-label '+(outKeysILS.length===0?'port-label-right':'port-label-right-dim')+'">'+(outKeysILS.length===0?'Import':'+ Import')+'</span>';
+        html += '<div class="port output port-no-shrink" id="port_'+node.id+'_out_'+nxOut+'" data-node="'+node.id+'" data-port="out_'+nxOut+'" data-dir="out"></div>';
+        html += '</div>';
+      }
+      html += '</div>';
+      return html;
     } else if (def.ports.inputs.length > 0) {
       def.ports.inputs.forEach(function(port) {
         html += '<div class="port-row">';
@@ -1100,30 +1148,29 @@ var App = {
       html += '<span class="chip-rate">'+fmtRate(c.output_per_min)+'/min</span>';
       html += '</div>';
     } else if (node.type === 'pls_station' || node.type === 'ils_station') {
-      var lsMode = node.props.mode || 'import';
-      var lsItem = c.item_out || c.item_in || node.props.item;
-      var lsIdef = (lsItem && ITEMS[lsItem]) ? ITEMS[lsItem] : null;
-      var lsName = lsIdef ? lsIdef.name : (lsItem || 'No item set');
-      var lsBadgeColor = lsMode === 'import' ? '#22c55e' : '#f59e0b';
-      html += '<div class="ls-badge-row">';
-      html += '<span class="ls-badge" style="background:'+lsBadgeColor+'22;border-color:'+lsBadgeColor+'55;color:'+lsBadgeColor+'">'+(lsMode==='import'?'IMPORT':'EXPORT')+'</span>';
-      if (lsIdef) {
-        html += '<span class="ls-item-name">'+lsIdef.icon+' '+lsName+'</span>';
-      } else {
-        html += '<span class="ls-item-none">No item set</span>';
+      var lsExports = c.exports || {};
+      var lsPortOut = c.portOutputs || {};
+      var lsExpKeys = Object.keys(lsExports);
+      var lsImpKeys = Object.keys(lsPortOut);
+      if (lsExpKeys.length === 0 && lsImpKeys.length === 0) {
+        html += '<div class="ls-item-none">Connect export or import slots</div>';
       }
-      html += '</div>';
-      if (lsMode === 'import') {
-        html += '<div class="ns-rate">'+fmtRate(c.output_per_min)+'/min</div>';
-      } else {
-        var lsEff = c.efficiency || 0;
-        var lsEc = lsEff >= 90 ? '#22c55e' : lsEff >= 50 ? '#f59e0b' : '#ef4444';
-        html += '<div class="ns-eff-row">';
-        html += '<span class="stat-val-w">'+fmtRate(c.effective_input||0)+' / '+fmtRate(c.demand_per_min||0)+'/min</span>';
-        html += '<span style="color:'+lsEc+'">'+lsEff+'%</span>';
+      for (var lsei = 0; lsei < lsExpKeys.length; lsei++) {
+        var lsEK = lsExpKeys[lsei];
+        var lsEDef = ITEMS[lsEK] || null;
+        html += '<div class="ls-slot-row ls-export">';
+        html += '<span class="ls-badge-sm ls-badge-exp">EXP</span>';
+        html += '<span class="ls-slot-name">'+(lsEDef ? lsEDef.name : lsEK)+'</span>';
+        html += '<span class="ls-slot-rate">'+fmtRate(lsExports[lsEK])+'/min</span>';
         html += '</div>';
-        html += '<div class="eff-bar-track-mt">';
-        html += '<div class="eff-bar-fill" style="width:'+Math.min(lsEff,100)+'%;background:'+lsEc+'"></div>';
+      }
+      for (var lsii = 0; lsii < lsImpKeys.length; lsii++) {
+        var lsPO = lsPortOut[lsImpKeys[lsii]];
+        var lsIDef = ITEMS[lsPO.item] || null;
+        html += '<div class="ls-slot-row ls-import">';
+        html += '<span class="ls-badge-sm ls-badge-imp">IMP</span>';
+        html += '<span class="ls-slot-name">'+(lsIDef ? lsIDef.name : lsPO.item)+'</span>';
+        html += '<span class="ls-slot-rate">'+fmtRate(lsPO.rate)+'/min</span>';
         html += '</div>';
       }
       if (node.props.planet) {
@@ -1415,32 +1462,42 @@ var App = {
     // ILS inter-planet dashed lines (shown in "All" view only)
     if (State.currentPlanet === 'all' && State.planets.length > 0) {
       var wrapRectILS = document.getElementById('canvas-wrap').getBoundingClientRect();
-      var ilsExports = [];
       var nodeKeysILS = Object.keys(State.nodes);
+      // Collect all (exportNode, item) pairs
+      var ilsExpEntries = [];
       for (var ilsEi = 0; ilsEi < nodeKeysILS.length; ilsEi++) {
         var ilsEn = State.nodes[nodeKeysILS[ilsEi]];
-        if ((ilsEn.type === 'ils_station' || ilsEn.type === 'pls_station') && ilsEn.props.mode === 'export' && ilsEn.props.item) {
-          ilsExports.push(ilsEn);
+        if ((ilsEn.type !== 'ils_station' && ilsEn.type !== 'pls_station') || !ilsEn.computed || !ilsEn.computed.exports) { continue; }
+        var enExpsD = ilsEn.computed.exports;
+        var enExpKeysD = Object.keys(enExpsD);
+        for (var ilsEki = 0; ilsEki < enExpKeysD.length; ilsEki++) {
+          if (enExpsD[enExpKeysD[ilsEki]] > 0.001) {
+            ilsExpEntries.push({node: ilsEn, item: enExpKeysD[ilsEki]});
+          }
         }
       }
-      for (var ilsExi = 0; ilsExi < ilsExports.length; ilsExi++) {
-        var ilsExp = ilsExports[ilsExi];
-        var ilsExpEl = document.getElementById('node_' + ilsExp.id);
+      var drawnPairsILS = {};
+      for (var ilsExi = 0; ilsExi < ilsExpEntries.length; ilsExi++) {
+        var ilsEntry = ilsExpEntries[ilsExi];
+        var ilsExpEl = document.getElementById('node_' + ilsEntry.node.id);
         if (!ilsExpEl || ilsExpEl.style.display === 'none') { continue; }
         var ilsExpRect = ilsExpEl.getBoundingClientRect();
         var ilsEx = ilsExpRect.left + ilsExpRect.width / 2 - wrapRectILS.left;
         var ilsEy = ilsExpRect.top + ilsExpRect.height / 2 - wrapRectILS.top;
-
         for (var ilsIi = 0; ilsIi < nodeKeysILS.length; ilsIi++) {
           var ilsImp = State.nodes[nodeKeysILS[ilsIi]];
-          if ((ilsImp.type !== 'ils_station' && ilsImp.type !== 'pls_station') || ilsImp.props.mode !== 'import') { continue; }
-          if (ilsImp.props.item !== ilsExp.props.item) { continue; }
+          if (ilsImp.id === ilsEntry.node.id) { continue; }
+          if (ilsImp.type !== 'ils_station' && ilsImp.type !== 'pls_station') { continue; }
+          var ilsImpSlotVals = Object.values(ilsImp.props.importSlots || {});
+          if (ilsImpSlotVals.indexOf(ilsEntry.item) === -1) { continue; }
+          var pairKey = [ilsEntry.node.id, ilsImp.id].sort().join('_');
+          if (drawnPairsILS[pairKey]) { continue; }
+          drawnPairsILS[pairKey] = true;
           var ilsImpEl = document.getElementById('node_' + ilsImp.id);
           if (!ilsImpEl || ilsImpEl.style.display === 'none') { continue; }
           var ilsImpRect = ilsImpEl.getBoundingClientRect();
           var ilsIx = ilsImpRect.left + ilsImpRect.width / 2 - wrapRectILS.left;
           var ilsIy = ilsImpRect.top + ilsImpRect.height / 2 - wrapRectILS.top;
-
           var ilsDx = Math.abs(ilsIx - ilsEx) * 0.5;
           var ilsD = 'M ' + ilsEx + ' ' + ilsEy + ' C ' + (ilsEx + ilsDx) + ' ' + ilsEy + ', ' + (ilsIx - ilsDx) + ' ' + ilsIy + ', ' + ilsIx + ' ' + ilsIy;
           var ilsPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
@@ -1765,12 +1822,46 @@ var App = {
       html += this.propNum(node, 'count', 'Count', 1, 100);
       html += this.propRange(node, 'sphere_pct', 'Dyson sphere %', 0, 100, 1);
     } else if (node.type === 'pls_station' || node.type === 'ils_station') {
+      var ilsMaxSlots = node.type === 'ils_station' ? 5 : 3;
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 10);
-      html += this.propSelect(node, 'mode', 'Mode', [{v:'import',l:'Import (source)'},{v:'export',l:'Export (sink)'}]);
-      html += this.propRecipeSearch(node, 'item', 'Item', itemOptions());
-      html += this.propNum(node, 'rate', 'Rate/min (each)', 1, 10000);
-      html += this.propText(node, 'planet', 'Planet label');
+      html += '<div class="prop-label mt-10">Export slots (auto-calculated)</div>';
+      var ilsC = node.computed || {};
+      var ilsExps = ilsC.exports || {};
+      var ilsExpKeys2 = Object.keys(ilsExps);
+      if (ilsExpKeys2.length === 0) {
+        html += '<div class="build-hint">Connect upstream producers to Export ports — rates are calculated automatically.</div>';
+      } else {
+        for (var ilsEpi = 0; ilsEpi < ilsExpKeys2.length; ilsEpi++) {
+          var ilsEKey = ilsExpKeys2[ilsEpi];
+          var ilsEDef2 = ITEMS[ilsEKey];
+          html += '<div class="prop-row"><label>'+(ilsEDef2 ? ilsEDef2.name : ilsEKey)+'</label>';
+          html += '<span class="prop-ro-val">'+fmtRate(ilsExps[ilsEKey])+'/min</span></div>';
+        }
+      }
+      html += '<div class="prop-label mt-10">Import slots (set item per port)</div>';
+      var ilsImpSlots = node.props.importSlots || {};
+      var ilsOutEdges = State.edges.filter(function(e) { return e.from_node === node.id; });
+      var ilsOutPorts = {};
+      ilsOutEdges.forEach(function(e) { ilsOutPorts[e.from_port] = true; });
+      var ilsOutPortKeys = Object.keys(ilsOutPorts).sort();
+      if (ilsOutPortKeys.length === 0) {
+        html += '<div class="build-hint">Connect downstream consumers to Import ports, then set the item for each slot.</div>';
+      } else {
+        for (var ilsOpi = 0; ilsOpi < ilsOutPortKeys.length; ilsOpi++) {
+          var ilsOPort = ilsOutPortKeys[ilsOpi];
+          var ilsSlotItem = ilsImpSlots[ilsOPort] || '';
+          var ilsOpts = itemOptions();
+          html += '<div class="prop-row"><label>Slot '+(ilsOpi+1)+'</label>';
+          html += '<select onchange="App.setILSImportSlot(\''+node.id+'\',\''+ilsOPort+'\',this.value)">';
+          html += '<option value="">— item —</option>';
+          for (var ilsOi = 0; ilsOi < ilsOpts.length; ilsOi++) {
+            var ilsOpt = ilsOpts[ilsOi];
+            html += '<option value="'+ilsOpt.v+'"'+(ilsSlotItem===ilsOpt.v?' selected':'')+'>'+ilsOpt.l+'</option>';
+          }
+          html += '</select></div>';
+        }
+      }
     }
 
     // computed panel
@@ -2217,20 +2308,35 @@ var App = {
       var ilsRows = {};
       Object.values(State.nodes).forEach(function(nd) {
         if (nd.type !== 'ils_station' && nd.type !== 'pls_station') { return; }
-        var item = nd.props.item;
-        if (!item) { return; }
-        if (!ilsRows[item]) { ilsRows[item] = {supply:0, demand:0, exportPlanets:[], importPlanets:[]}; }
-        var cnt = nd.props.count || 1;
-        var rate = (nd.props.rate || 0) * cnt;
-        if (nd.props.mode === 'export' && nd.computed) {
-          ilsRows[item].supply += nd.computed.effective_input || 0;
-          if (nd.props.planet && ilsRows[item].exportPlanets.indexOf(nd.props.planet) === -1) {
-            ilsRows[item].exportPlanets.push(nd.props.planet);
+        var ndPlanet = nd.props.planet || '';
+        // Export side — from computed.exports
+        if (nd.computed && nd.computed.exports) {
+          var exps = nd.computed.exports;
+          var expKeys = Object.keys(exps);
+          for (var exki = 0; exki < expKeys.length; exki++) {
+            var exItem = expKeys[exki];
+            var exRate = exps[exItem] || 0;
+            if (!ilsRows[exItem]) { ilsRows[exItem] = {supply:0, demand:0, exportPlanets:[], importPlanets:[]}; }
+            ilsRows[exItem].supply += exRate;
+            if (ndPlanet && ilsRows[exItem].exportPlanets.indexOf(ndPlanet) === -1) {
+              ilsRows[exItem].exportPlanets.push(ndPlanet);
+            }
           }
-        } else if (nd.props.mode === 'import') {
-          ilsRows[item].demand += rate;
-          if (nd.props.planet && ilsRows[item].importPlanets.indexOf(nd.props.planet) === -1) {
-            ilsRows[item].importPlanets.push(nd.props.planet);
+        }
+        // Import side — from computed.portOutputs
+        if (nd.computed && nd.computed.portOutputs) {
+          var po = nd.computed.portOutputs;
+          var poKeys = Object.keys(po);
+          for (var poki = 0; poki < poKeys.length; poki++) {
+            var poEntry = po[poKeys[poki]];
+            if (!poEntry || !poEntry.item) { continue; }
+            var impItem = poEntry.item;
+            var impRate = poEntry.rate || 0;
+            if (!ilsRows[impItem]) { ilsRows[impItem] = {supply:0, demand:0, exportPlanets:[], importPlanets:[]}; }
+            ilsRows[impItem].demand += impRate;
+            if (ndPlanet && ilsRows[impItem].importPlanets.indexOf(ndPlanet) === -1) {
+              ilsRows[impItem].importPlanets.push(ndPlanet);
+            }
           }
         }
       });
@@ -2717,6 +2823,19 @@ var App = {
     if (headerEl && key === 'label') {
       headerEl.textContent = val || NODE_DEFS[node.type].label;
     }
+  },
+
+  setILSImportSlot: function(nodeId, portId, itemKey) {
+    var node = State.nodes[nodeId];
+    if (!node) { return; }
+    if (!node.props.importSlots) { node.props.importSlots = {}; }
+    if (itemKey) { node.props.importSlots[portId] = itemKey; }
+    else { delete node.props.importSlots[portId]; }
+    var el = document.getElementById('node_' + nodeId);
+    if (el) { el.innerHTML = this.buildNodeHTML(node); this.bindNodeEvents(el, node); }
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
   },
 
   updateMinerVein: function(nodeId, idx, val) {

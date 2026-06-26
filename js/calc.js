@@ -83,6 +83,75 @@ function calcMultiInputMachine(n, inflowMap, speedMult) {
   return n.computed;
 }
 
+function calcILSStation(n, inflow, inflowMap) {
+  var isPLS = (n.type === 'pls_station');
+  var maxSlots = isPLS ? 3 : 5;
+  var powerMW = isPLS ? 0.600 : 1.000;
+  var cnt = n.props.count || 1;
+
+  // Migrate old single-mode props
+  if ((n.props.mode !== undefined || n.props.item !== undefined) && !n.props._migrated) {
+    if (!n.props.importSlots) { n.props.importSlots = {}; }
+    if (n.props.mode === 'import' && n.props.item) {
+      n.props.importSlots['out_0'] = n.props.item;
+    }
+    n.props._migrated = true;
+    delete n.props.mode;
+    delete n.props.item;
+    delete n.props.rate;
+  }
+  if (!n.props.importSlots) { n.props.importSlots = {}; }
+
+  var ilsSup = State._ilsSupply || {};
+
+  // Export side: auto from inflowMap
+  var exports = {};
+  if (inflowMap) {
+    var fkeys = Object.keys(inflowMap);
+    for (var fi = 0; fi < fkeys.length; fi++) {
+      var fk = fkeys[fi];
+      if (fk !== 'power' && inflowMap[fk] > 0.001) { exports[fk] = inflowMap[fk]; }
+    }
+  }
+
+  // Import side: portOutputs from importSlots + ILS supply matching
+  var importSlots = n.props.importSlots;
+  var portOutputs = {};
+  var totalImportRate = 0;
+  var slotKeys = Object.keys(importSlots);
+  for (var si = 0; si < slotKeys.length; si++) {
+    var portId = slotKeys[si];
+    var item = importSlots[portId];
+    if (!item) { continue; }
+    var supply = ilsSup[item] || 0;
+    // Count all import ports for this item to split supply proportionally
+    var totalDem = 0;
+    var nkeys = Object.keys(State.nodes);
+    for (var ni = 0; ni < nkeys.length; ni++) {
+      var nd = State.nodes[nkeys[ni]];
+      if (nd.type === 'ils_station' || nd.type === 'pls_station') {
+        var ndSlots = nd.props.importSlots || {};
+        var ndKeys = Object.keys(ndSlots);
+        for (var nsi = 0; nsi < ndKeys.length; nsi++) {
+          if (ndSlots[ndKeys[nsi]] === item) { totalDem++; }
+        }
+      }
+    }
+    var rate = totalDem > 0 ? supply / totalDem : 0;
+    portOutputs[portId] = {item: item, rate: rate};
+    totalImportRate += rate;
+  }
+
+  n.computed = {
+    exports: exports,
+    portOutputs: portOutputs,
+    output_per_min: totalImportRate,
+    power_draw_mw: powerMW * cnt,
+    item_out: null
+  };
+  return n.computed;
+}
+
 var NODE_DEFS = {
   mining:{
     label:'Mining Node',icon:'',color:'#92400e',
@@ -464,61 +533,15 @@ var NODE_DEFS = {
   },
   pls_station:{
     label:'PLS Station',icon:'',color:'#1d4ed8',
-    defaults:{mode:'import',item:'',rate:60,planet:'',count:1},
-    ports:{inputs:[{id:'in',label:'Export In',item:'any'}],outputs:[{id:'out',label:'Import Out',item:'any'}]},
-    calc:function(n,inflow){
-      var mode=n.props.mode||'import';
-      var cnt=n.props.count||1;
-      var rate=(n.props.rate||0)*cnt;
-      var item=n.props.item||null;
-      if(mode==='import'){
-        var supply=rate;
-        var ilsSup=State._ilsSupply;
-        if(ilsSup&&item&&ilsSup[item]!==undefined){
-          var totalExp=ilsSup[item]||0;
-          var totalDem=0;
-          var nkeys=Object.keys(State.nodes);
-          for(var i=0;i<nkeys.length;i++){var nd=State.nodes[nkeys[i]];if((nd.type==='pls_station'||nd.type==='ils_station')&&nd.props.mode==='import'&&nd.props.item===item){totalDem+=(nd.props.rate||0)*(nd.props.count||1);}}
-          supply=totalDem>0?Math.min(rate,(rate/totalDem)*totalExp):0;
-        }
-        n.computed={item_out:item,output_per_min:supply,power_draw_mw:0.600*cnt,ils_supply:ilsSup&&item?ilsSup[item]||0:undefined};
-      } else {
-        var demand=rate;
-        var actual=Math.min(inflow||0,demand);
-        var eff=demand>0?Math.round(actual/demand*100):100;
-        n.computed={item_in:item,input_per_min:inflow||0,effective_input:actual,output_per_min:0,demand_per_min:demand,efficiency:eff,power_draw_mw:0.600*cnt};
-      }
-      return n.computed;
-    }
+    defaults:{planet:'',count:1,importSlots:{}},
+    ports:{inputs:[{id:'in_0',label:'Export In',item:'any'}],outputs:[{id:'out_0',label:'Import Out',item:'any'}]},
+    calc:calcILSStation
   },
   ils_station:{
     label:'ILS Station',icon:'',color:'#1e3a8a',
-    defaults:{mode:'import',item:'',rate:60,planet:'',count:1},
-    ports:{inputs:[{id:'in',label:'Export In',item:'any'}],outputs:[{id:'out',label:'Import Out',item:'any'}]},
-    calc:function(n,inflow){
-      var mode=n.props.mode||'import';
-      var cnt=n.props.count||1;
-      var rate=(n.props.rate||0)*cnt;
-      var item=n.props.item||null;
-      if(mode==='import'){
-        var supply=rate;
-        var ilsSup=State._ilsSupply;
-        if(ilsSup&&item&&ilsSup[item]!==undefined){
-          var totalExp=ilsSup[item]||0;
-          var totalDem=0;
-          var nkeys=Object.keys(State.nodes);
-          for(var i=0;i<nkeys.length;i++){var nd=State.nodes[nkeys[i]];if((nd.type==='pls_station'||nd.type==='ils_station')&&nd.props.mode==='import'&&nd.props.item===item){totalDem+=(nd.props.rate||0)*(nd.props.count||1);}}
-          supply=totalDem>0?Math.min(rate,(rate/totalDem)*totalExp):0;
-        }
-        n.computed={item_out:item,output_per_min:supply,power_draw_mw:1.000*cnt,ils_supply:ilsSup&&item?ilsSup[item]||0:undefined};
-      } else {
-        var demand=rate;
-        var actual=Math.min(inflow||0,demand);
-        var eff=demand>0?Math.round(actual/demand*100):100;
-        n.computed={item_in:item,input_per_min:inflow||0,effective_input:actual,output_per_min:0,demand_per_min:demand,efficiency:eff,power_draw_mw:1.000*cnt};
-      }
-      return n.computed;
-    }
+    defaults:{planet:'',count:1,importSlots:{}},
+    ports:{inputs:[{id:'in_0',label:'Export In',item:'any'}],outputs:[{id:'out_0',label:'Import Out',item:'any'}]},
+    calc:calcILSStation
   }
 };
 

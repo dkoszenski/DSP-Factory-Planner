@@ -310,3 +310,12 @@ header .subtitle{font-size:12px;color:var(--text3)}
 .td-hi-dim{color:var(--text2)}
 .text-right{text-align:right}
 .planet-name-input{padding:3px 8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);border-radius:4px;font-size:12px;width:160px}
+.ls-slot-row{display:flex;align-items:center;gap:5px;margin:2px 0;padding:2px 4px;border-radius:4px;font-size:10px}
+.ls-export{background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.2)}
+.ls-import{background:rgba(96,165,250,0.07);border:1px solid rgba(96,165,250,0.2)}
+.ls-badge-sm{font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;flex-shrink:0;letter-spacing:0.03em}
+.ls-badge-exp{background:rgba(74,222,128,0.2);color:#4ade80;border:1px solid rgba(74,222,128,0.4)}
+.ls-badge-imp{background:rgba(96,165,250,0.2);color:#60a5fa;border:1px solid rgba(96,165,250,0.4)}
+.ls-slot-name{flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ls-slot-rate{color:var(--text2);flex-shrink:0;font-size:9px}
+.prop-ro-val{color:var(--text2);font-size:11px;padding:1px 6px;background:var(--bg3);border-radius:3px;border:1px solid var(--border1)}
