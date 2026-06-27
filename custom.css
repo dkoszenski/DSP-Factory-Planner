@@ -319,3 +319,16 @@ header .subtitle{font-size:12px;color:var(--text3)}
 .ls-slot-name{flex:1;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ls-slot-rate{color:var(--text2);flex-shrink:0;font-size:9px}
 .prop-ro-val{color:var(--text2);font-size:11px;padding:1px 6px;background:var(--bg3);border-radius:3px;border:1px solid var(--border1)}
+.ils-slot-cfg{background:var(--bg2);border:1px solid var(--border1);border-radius:5px;padding:6px 8px;margin-bottom:6px}
+.ils-mode-row{display:flex;align-items:center;gap:4px;margin-bottom:5px}
+.ils-slot-num{font-size:9px;color:var(--text3);min-width:12px;text-align:right;flex-shrink:0}
+.ils-mode-btn{font-size:10px;padding:2px 8px;border-radius:3px;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);cursor:pointer;flex-shrink:0}
+.ils-mode-btn:hover{border-color:var(--text2);color:var(--text)}
+.ils-mode-active-exp{background:rgba(74,222,128,0.15);border-color:#4ade80;color:#4ade80}
+.ils-mode-active-exp:hover{background:rgba(74,222,128,0.25);color:#4ade80}
+.ils-mode-active-imp{background:rgba(96,165,250,0.15);border-color:#60a5fa;color:#60a5fa}
+.ils-mode-active-imp:hover{background:rgba(96,165,250,0.25);color:#60a5fa}
+.ils-slot-remove{margin-left:auto;font-size:12px;padding:1px 6px;border-radius:3px;border:1px solid transparent;background:transparent;color:var(--text3);cursor:pointer;flex-shrink:0}
+.ils-slot-remove:hover{background:rgba(239,68,68,0.15);border-color:#ef4444;color:#ef4444}
+.ils-rate-ro{font-size:10px;color:var(--text3);margin-top:4px;padding:2px 4px}
+.ils-rate-label{color:var(--text2)}

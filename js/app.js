@@ -974,42 +974,29 @@ var App = {
       html += '</div>';
       return html;
     } else if (node.type === 'ils_station' || node.type === 'pls_station') {
-      var ilsMax = node.type === 'ils_station' ? 5 : 3;
-      var usedInILS = {}, usedOutILS = {};
-      State.edges.forEach(function(e) {
-        if (e.to_node === node.id) { usedInILS[e.to_port] = true; }
-        if (e.from_node === node.id) { usedOutILS[e.from_port] = true; }
-      });
-      var inKeysILS = Object.keys(usedInILS).sort();
-      var outKeysILS = Object.keys(usedOutILS).sort();
-      var totalUsedILS = inKeysILS.length + outKeysILS.length;
-      for (var ixi = 0; ixi < inKeysILS.length; ixi++) {
-        html += '<div class="port-row">';
-        html += '<div class="port input connected" id="port_'+node.id+'_'+inKeysILS[ixi]+'" data-node="'+node.id+'" data-port="'+inKeysILS[ixi]+'" data-dir="in"></div>';
-        html += '<span class="port-label port-label-sm">Export '+(ixi+1)+'</span>';
-        html += '</div>';
-      }
-      if (totalUsedILS < ilsMax) {
-        var nxIn = 0;
-        while (usedInILS['in_'+nxIn]) { nxIn++; }
-        html += '<div class="port-row">';
-        html += '<div class="port input" id="port_'+node.id+'_in_'+nxIn+'" data-node="'+node.id+'" data-port="in_'+nxIn+'" data-dir="in"></div>';
-        html += '<span class="port-label '+(inKeysILS.length===0?'port-label-sm':'port-label-dim')+'">'+(inKeysILS.length===0?'Export':'+ Export')+'</span>';
-        html += '</div>';
+      var ilsSlots = node.props.slots || [];
+      for (var ilsHsi = 0; ilsHsi < ilsSlots.length; ilsHsi++) {
+        var ilsHsl = ilsSlots[ilsHsi];
+        var ilsHlabel = ilsHsl.item ? itemName(ilsHsl.item) : (ilsHsl.mode === 'export' ? 'Export' : 'Import');
+        if (ilsHsl.mode === 'export') {
+          var ilsHpid = 'in_' + ilsHsi;
+          var ilsHconn = State.edges.some(function(e) { return e.to_node === node.id && e.to_port === ilsHpid; });
+          html += '<div class="port-row">';
+          html += '<div class="port input'+(ilsHconn?' connected':'')+'" id="port_'+node.id+'_'+ilsHpid+'" data-node="'+node.id+'" data-port="'+ilsHpid+'" data-dir="in"></div>';
+          html += '<span class="port-label port-label-sm">'+escHtml(ilsHlabel)+'</span>';
+          html += '</div>';
+        }
       }
       html += '<div id="node_stats_'+node.id+'"></div>';
-      for (var oxi = 0; oxi < outKeysILS.length; oxi++) {
+      for (var ilsHsi2 = 0; ilsHsi2 < ilsSlots.length; ilsHsi2++) {
+        var ilsHsl2 = ilsSlots[ilsHsi2];
+        if (ilsHsl2.mode !== 'import') { continue; }
+        var ilsHlabel2 = ilsHsl2.item ? itemName(ilsHsl2.item) : 'Import';
+        var ilsHpid2 = 'out_' + ilsHsi2;
+        var ilsHconn2 = State.edges.some(function(e) { return e.from_node === node.id && e.from_port === ilsHpid2; });
         html += '<div class="port-row port-row-out">';
-        html += '<span class="port-label port-label-right">Import '+(oxi+1)+'</span>';
-        html += '<div class="port output connected port-no-shrink" id="port_'+node.id+'_'+outKeysILS[oxi]+'" data-node="'+node.id+'" data-port="'+outKeysILS[oxi]+'" data-dir="out"></div>';
-        html += '</div>';
-      }
-      if (totalUsedILS < ilsMax) {
-        var nxOut = 0;
-        while (usedOutILS['out_'+nxOut]) { nxOut++; }
-        html += '<div class="port-row port-row-out">';
-        html += '<span class="port-label '+(outKeysILS.length===0?'port-label-right':'port-label-right-dim')+'">'+(outKeysILS.length===0?'Import':'+ Import')+'</span>';
-        html += '<div class="port output port-no-shrink" id="port_'+node.id+'_out_'+nxOut+'" data-node="'+node.id+'" data-port="out_'+nxOut+'" data-dir="out"></div>';
+        html += '<span class="port-label port-label-right">'+escHtml(ilsHlabel2)+'</span>';
+        html += '<div class="port output'+(ilsHconn2?' connected':'')+' port-no-shrink" id="port_'+node.id+'_'+ilsHpid2+'" data-node="'+node.id+'" data-port="'+ilsHpid2+'" data-dir="out"></div>';
         html += '</div>';
       }
       html += '</div>';
@@ -1488,7 +1475,7 @@ var App = {
           var ilsImp = State.nodes[nodeKeysILS[ilsIi]];
           if (ilsImp.id === ilsEntry.node.id) { continue; }
           if (ilsImp.type !== 'ils_station' && ilsImp.type !== 'pls_station') { continue; }
-          var ilsImpSlotVals = Object.values(ilsImp.props.importSlots || {});
+          var ilsImpSlotVals = (ilsImp.props.slots || []).filter(function(s) { return s.mode === 'import'; }).map(function(s) { return s.item; });
           if (ilsImpSlotVals.indexOf(ilsEntry.item) === -1) { continue; }
           var pairKey = [ilsEntry.node.id, ilsImp.id].sort().join('_');
           if (drawnPairsILS[pairKey]) { continue; }
@@ -1825,42 +1812,40 @@ var App = {
       var ilsMaxSlots = node.type === 'ils_station' ? 5 : 3;
       html += this.propText(node, 'label', 'Name');
       html += this.propNum(node, 'count', 'Count', 1, 10);
-      html += '<div class="prop-label mt-10">Export slots (auto-calculated)</div>';
-      var ilsC = node.computed || {};
-      var ilsExps = ilsC.exports || {};
-      var ilsExpKeys2 = Object.keys(ilsExps);
-      if (ilsExpKeys2.length === 0) {
-        html += '<div class="build-hint">Connect upstream producers to Export ports — rates are calculated automatically.</div>';
-      } else {
-        for (var ilsEpi = 0; ilsEpi < ilsExpKeys2.length; ilsEpi++) {
-          var ilsEKey = ilsExpKeys2[ilsEpi];
-          var ilsEDef2 = ITEMS[ilsEKey];
-          html += '<div class="prop-row"><label>'+(ilsEDef2 ? ilsEDef2.name : ilsEKey)+'</label>';
-          html += '<span class="prop-ro-val">'+fmtRate(ilsExps[ilsEKey])+'/min</span></div>';
+      var ilsPSlots = node.props.slots || [];
+      var ilsPComp = node.computed || {};
+      html += '<div class="prop-label mt-10">Slots ('+ilsPSlots.length+'/'+ilsMaxSlots+')</div>';
+      var ilsItemOpts = itemOptions();
+      for (var ilsPi = 0; ilsPi < ilsPSlots.length; ilsPi++) {
+        var ilsPSl = ilsPSlots[ilsPi];
+        html += '<div class="ils-slot-cfg">';
+        html += '<div class="ils-mode-row">';
+        html += '<span class="ils-slot-num">'+(ilsPi+1)+'</span>';
+        html += '<button class="ils-mode-btn'+(ilsPSl.mode==='export'?' ils-mode-active-exp':'')+'" onclick="App.setILSSlotMode(\''+node.id+'\','+ilsPi+',\'export\')">Export</button>';
+        html += '<button class="ils-mode-btn'+(ilsPSl.mode==='import'?' ils-mode-active-imp':'')+'" onclick="App.setILSSlotMode(\''+node.id+'\','+ilsPi+',\'import\')">Import</button>';
+        html += '<button class="ils-slot-remove" onclick="App.removeILSSlot(\''+node.id+'\','+ilsPi+')" title="Remove slot">&#x2715;</button>';
+        html += '</div>';
+        html += '<select class="select-ctrl" onchange="App.setILSSlotItem(\''+node.id+'\','+ilsPi+',this.value)">';
+        html += '<option value="">&#8212; select item &#8212;</option>';
+        for (var ilsIO = 0; ilsIO < ilsItemOpts.length; ilsIO++) {
+          var ilsIOpt = ilsItemOpts[ilsIO];
+          html += '<option value="'+ilsIOpt.v+'"'+(ilsPSl.item===ilsIOpt.v?' selected':'')+'>'+ilsIOpt.l+'</option>';
         }
-      }
-      html += '<div class="prop-label mt-10">Import slots (set item per port)</div>';
-      var ilsImpSlots = node.props.importSlots || {};
-      var ilsOutEdges = State.edges.filter(function(e) { return e.from_node === node.id; });
-      var ilsOutPorts = {};
-      ilsOutEdges.forEach(function(e) { ilsOutPorts[e.from_port] = true; });
-      var ilsOutPortKeys = Object.keys(ilsOutPorts).sort();
-      if (ilsOutPortKeys.length === 0) {
-        html += '<div class="build-hint">Connect downstream consumers to Import ports, then set the item for each slot.</div>';
-      } else {
-        for (var ilsOpi = 0; ilsOpi < ilsOutPortKeys.length; ilsOpi++) {
-          var ilsOPort = ilsOutPortKeys[ilsOpi];
-          var ilsSlotItem = ilsImpSlots[ilsOPort] || '';
-          var ilsOpts = itemOptions();
-          html += '<div class="prop-row"><label>Slot '+(ilsOpi+1)+'</label>';
-          html += '<select onchange="App.setILSImportSlot(\''+node.id+'\',\''+ilsOPort+'\',this.value)">';
-          html += '<option value="">— item —</option>';
-          for (var ilsOi = 0; ilsOi < ilsOpts.length; ilsOi++) {
-            var ilsOpt = ilsOpts[ilsOi];
-            html += '<option value="'+ilsOpt.v+'"'+(ilsSlotItem===ilsOpt.v?' selected':'')+'>'+ilsOpt.l+'</option>';
+        html += '</select>';
+        if (ilsPSl.item) {
+          if (ilsPSl.mode === 'export') {
+            var ilsPExpRate = (ilsPComp.exports && ilsPComp.exports[ilsPSl.item]) ? ilsPComp.exports[ilsPSl.item] : 0;
+            html += '<div class="ils-rate-ro"><span class="ils-rate-label">Rate (auto):</span> '+fmtRate(ilsPExpRate)+'/min</div>';
+          } else {
+            var ilsPPO = ilsPComp.portOutputs && ilsPComp.portOutputs['out_'+ilsPi];
+            var ilsPImpRate = ilsPPO ? ilsPPO.rate : 0;
+            html += '<div class="ils-rate-ro"><span class="ils-rate-label">Rate (inter-planet):</span> '+fmtRate(ilsPImpRate)+'/min</div>';
           }
-          html += '</select></div>';
         }
+        html += '</div>';
+      }
+      if (ilsPSlots.length < ilsMaxSlots) {
+        html += '<button class="btn btn-full mt-6" onclick="App.addILSSlot(\''+node.id+'\')">+ Add slot</button>';
       }
     }
 
@@ -2825,12 +2810,72 @@ var App = {
     }
   },
 
-  setILSImportSlot: function(nodeId, portId, itemKey) {
+  addILSSlot: function(nodeId) {
     var node = State.nodes[nodeId];
     if (!node) { return; }
-    if (!node.props.importSlots) { node.props.importSlots = {}; }
-    if (itemKey) { node.props.importSlots[portId] = itemKey; }
-    else { delete node.props.importSlots[portId]; }
+    if (!node.props.slots) { node.props.slots = []; }
+    var max = node.type === 'ils_station' ? 5 : 3;
+    if (node.props.slots.length >= max) { return; }
+    node.props.slots.push({item: '', mode: 'export'});
+    var el = document.getElementById('node_' + nodeId);
+    if (el) { el.innerHTML = this.buildNodeHTML(node); this.bindNodeEvents(el, node); }
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
+
+  removeILSSlot: function(nodeId, slotIdx) {
+    var node = State.nodes[nodeId];
+    if (!node || !node.props.slots) { return; }
+    var portIn = 'in_' + slotIdx;
+    var portOut = 'out_' + slotIdx;
+    State.edges = State.edges.filter(function(e) {
+      return !((e.to_node === nodeId && e.to_port === portIn) ||
+               (e.from_node === nodeId && e.from_port === portOut));
+    });
+    node.props.slots.splice(slotIdx, 1);
+    // Remap port IDs for slots that shifted down
+    State.edges.forEach(function(e) {
+      if (e.to_node === nodeId) {
+        var m = e.to_port.match(/^in_(\d+)$/);
+        if (m && parseInt(m[1], 10) > slotIdx) { e.to_port = 'in_' + (parseInt(m[1], 10) - 1); }
+      }
+      if (e.from_node === nodeId) {
+        var m2 = e.from_port.match(/^out_(\d+)$/);
+        if (m2 && parseInt(m2[1], 10) > slotIdx) { e.from_port = 'out_' + (parseInt(m2[1], 10) - 1); }
+      }
+    });
+    var el = document.getElementById('node_' + nodeId);
+    if (el) { el.innerHTML = this.buildNodeHTML(node); this.bindNodeEvents(el, node); }
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
+
+  setILSSlotItem: function(nodeId, slotIdx, itemKey) {
+    var node = State.nodes[nodeId];
+    if (!node || !node.props.slots) { return; }
+    node.props.slots[slotIdx].item = itemKey;
+    var el = document.getElementById('node_' + nodeId);
+    if (el) { el.innerHTML = this.buildNodeHTML(node); this.bindNodeEvents(el, node); }
+    this.recalcAll();
+    this.renderEdges();
+    this.renderSidebar();
+  },
+
+  setILSSlotMode: function(nodeId, slotIdx, mode) {
+    var node = State.nodes[nodeId];
+    if (!node || !node.props.slots) { return; }
+    var slot = node.props.slots[slotIdx];
+    if (!slot || slot.mode === mode) { return; }
+    // Remove edges connected to either port direction for this slot
+    var portIn = 'in_' + slotIdx;
+    var portOut = 'out_' + slotIdx;
+    State.edges = State.edges.filter(function(e) {
+      return !((e.to_node === nodeId && e.to_port === portIn) ||
+               (e.from_node === nodeId && e.from_port === portOut));
+    });
+    slot.mode = mode;
     var el = document.getElementById('node_' + nodeId);
     if (el) { el.innerHTML = this.buildNodeHTML(node); this.bindNodeEvents(el, node); }
     this.recalcAll();

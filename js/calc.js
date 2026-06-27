@@ -85,61 +85,60 @@ function calcMultiInputMachine(n, inflowMap, speedMult) {
 
 function calcILSStation(n, inflow, inflowMap) {
   var isPLS = (n.type === 'pls_station');
-  var maxSlots = isPLS ? 3 : 5;
   var powerMW = isPLS ? 0.600 : 1.000;
   var cnt = n.props.count || 1;
 
-  // Migrate old single-mode props
-  if ((n.props.mode !== undefined || n.props.item !== undefined) && !n.props._migrated) {
-    if (!n.props.importSlots) { n.props.importSlots = {}; }
-    if (n.props.mode === 'import' && n.props.item) {
-      n.props.importSlots['out_0'] = n.props.item;
+  // Migrate old formats to slots array
+  if (!n.props.slots) {
+    n.props.slots = [];
+    if (n.props.mode === 'export' && n.props.item) {
+      n.props.slots.push({item: n.props.item, mode: 'export'});
+    } else if (n.props.mode === 'import' && n.props.item) {
+      n.props.slots.push({item: n.props.item, mode: 'import'});
     }
-    n.props._migrated = true;
+    if (n.props.importSlots) {
+      var isMap = n.props.importSlots;
+      var isKeys = Object.keys(isMap);
+      for (var isi = 0; isi < isKeys.length; isi++) {
+        if (isMap[isKeys[isi]]) { n.props.slots.push({item: isMap[isKeys[isi]], mode: 'import'}); }
+      }
+    }
     delete n.props.mode;
     delete n.props.item;
     delete n.props.rate;
+    delete n.props.importSlots;
+    delete n.props._migrated;
   }
-  if (!n.props.importSlots) { n.props.importSlots = {}; }
 
+  var slots = n.props.slots || [];
   var ilsSup = State._ilsSupply || {};
-
-  // Export side: auto from inflowMap
   var exports = {};
-  if (inflowMap) {
-    var fkeys = Object.keys(inflowMap);
-    for (var fi = 0; fi < fkeys.length; fi++) {
-      var fk = fkeys[fi];
-      if (fk !== 'power' && inflowMap[fk] > 0.001) { exports[fk] = inflowMap[fk]; }
-    }
-  }
-
-  // Import side: portOutputs from importSlots + ILS supply matching
-  var importSlots = n.props.importSlots;
   var portOutputs = {};
   var totalImportRate = 0;
-  var slotKeys = Object.keys(importSlots);
-  for (var si = 0; si < slotKeys.length; si++) {
-    var portId = slotKeys[si];
-    var item = importSlots[portId];
-    if (!item) { continue; }
-    var supply = ilsSup[item] || 0;
-    // Count all import ports for this item to split supply proportionally
-    var totalDem = 0;
-    var nkeys = Object.keys(State.nodes);
-    for (var ni = 0; ni < nkeys.length; ni++) {
-      var nd = State.nodes[nkeys[ni]];
-      if (nd.type === 'ils_station' || nd.type === 'pls_station') {
-        var ndSlots = nd.props.importSlots || {};
-        var ndKeys = Object.keys(ndSlots);
-        for (var nsi = 0; nsi < ndKeys.length; nsi++) {
-          if (ndSlots[ndKeys[nsi]] === item) { totalDem++; }
+
+  for (var si = 0; si < slots.length; si++) {
+    var slot = slots[si];
+    if (!slot.item) { continue; }
+    if (slot.mode === 'export') {
+      var expRate = (inflowMap && inflowMap[slot.item]) ? inflowMap[slot.item] : 0;
+      exports[slot.item] = (exports[slot.item] || 0) + expRate;
+    } else {
+      // Count importers for this item to split supply proportionally
+      var supply = ilsSup[slot.item] || 0;
+      var importerCount = 0;
+      var nkeys = Object.keys(State.nodes);
+      for (var ni = 0; ni < nkeys.length; ni++) {
+        var nd = State.nodes[nkeys[ni]];
+        if (nd.type !== 'ils_station' && nd.type !== 'pls_station') { continue; }
+        var ndSlots = nd.props.slots || [];
+        for (var nsi = 0; nsi < ndSlots.length; nsi++) {
+          if (ndSlots[nsi].item === slot.item && ndSlots[nsi].mode === 'import') { importerCount++; }
         }
       }
+      var rate = importerCount > 0 ? supply / importerCount : 0;
+      portOutputs['out_' + si] = {item: slot.item, rate: rate};
+      totalImportRate += rate;
     }
-    var rate = totalDem > 0 ? supply / totalDem : 0;
-    portOutputs[portId] = {item: item, rate: rate};
-    totalImportRate += rate;
   }
 
   n.computed = {
@@ -533,14 +532,14 @@ var NODE_DEFS = {
   },
   pls_station:{
     label:'PLS Station',icon:'',color:'#1d4ed8',
-    defaults:{planet:'',count:1,importSlots:{}},
-    ports:{inputs:[{id:'in_0',label:'Export In',item:'any'}],outputs:[{id:'out_0',label:'Import Out',item:'any'}]},
+    defaults:{planet:'',count:1,slots:[],label:''},
+    ports:{inputs:[],outputs:[]},
     calc:calcILSStation
   },
   ils_station:{
     label:'ILS Station',icon:'',color:'#1e3a8a',
-    defaults:{planet:'',count:1,importSlots:{}},
-    ports:{inputs:[{id:'in_0',label:'Export In',item:'any'}],outputs:[{id:'out_0',label:'Import Out',item:'any'}]},
+    defaults:{planet:'',count:1,slots:[],label:''},
+    ports:{inputs:[],outputs:[]},
     calc:calcILSStation
   }
 };
