@@ -1446,8 +1446,8 @@ var App = {
       }
     }
 
-    // ILS inter-planet dashed lines (shown in "All" view only)
-    if (State.currentPlanet === 'all' && State.planets.length > 0) {
+    // ILS logistics dashed lines (all matching export→import pairs, any planet view)
+    if (State.planets.length > 0) {
       var wrapRectILS = document.getElementById('canvas-wrap').getBoundingClientRect();
       var nodeKeysILS = Object.keys(State.nodes);
       // Collect all (exportNode, item) pairs
